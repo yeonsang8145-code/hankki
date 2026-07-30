@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <!-- Firebase SDK (Compat 버전) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>상품 주문서 (무통장 입금)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    </style>
+</head>
+<body class="text-slate-800 antialiased pb-12">
+    <header class="bg-indigo-600 text-white py-4 px-4 shadow-md sticky top-0 z-50">
+        <div class="max-w-md mx-auto flex justify-between items-center">
+            <h1 class="text-lg font-bold">📦 주문서 작성</h1>
+            <a href="index.html" class="text-xs bg-indigo-500 hover:bg-indigo-400 px-3 py-1.5 rounded-lg font-medium transition">← 상품목록</a>
+        </div>
+    </header>
+
+    <main class="max-w-md mx-auto p-4 mt-2 space-y-4">
+        <!-- 장바구니 선택 상품 목록 카드 -->
+        <div class="bg-white rounded-xl shadow-sm p-4 border border-slate-100 space-y-3">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+                <span class="text-xs text-indigo-600 font-bold uppercase tracking-wide">🛒 장바구니 주문 상품</span>
+                <span id="cart_item_count" class="text-xs text-slate-400">0개 상품</span>
+            </div>
+            
+            <div id="cart_items_container" class="divide-y divide-slate-100 max-h-56 overflow-y-auto space-y-2">
+                <!-- 동적 상품 목록 바인딩 -->
+            </div>
+
+            <div class="border-t border-slate-100 pt-3 space-y-1.5 text-sm">
+                <div class="flex justify-between items-center text-slate-600">
+                    <span>상품 합계</span>
+                    <span id="product_subtotal" class="font-medium text-slate-800">0원</span>
+                </div>
+                <div class="flex justify-between items-center text-slate-600">
+                    <span>배송비 <span class="text-xs text-slate-400">(5만원 미만 3,500원)</span></span>
+                    <span id="shipping_fee_display" class="font-medium text-slate-800">3,500원</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 주문 폼 -->
+        <form id="orderForm" onsubmit="handleSubmit(event)" class="bg-white rounded-xl shadow-sm p-5 border border-slate-100 space-y-4">
+            <div class="flex justify-between items-center mb-1">
+                <label class="block text-xs font-semibold text-slate-600">주문자 성함 <span class="text-red-500">*</span></label>
+                <span class="text-[10px] text-indigo-600 font-medium">회원 정보 자동 연동 (수정 가능)</span>
+            </div>
+            <div>
+                <input type="text" id="buyer_name" required placeholder="주문자 성함을 입력하세요" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">휴대폰 번호 <span class="text-red-500">*</span></label>
+                <input type="tel" id="buyer_phone" required placeholder="010-0000-0000" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">배송지 주소 <span class="text-red-500">*</span></label>
+                <input type="text" id="shipping_address" required placeholder="도로명 주소를 입력하세요" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <p class="text-[11px] text-red-500 mt-1.5 leading-relaxed">⚠️ 주소를 허위 기재하거나 오기재할 경우 택배 배송에 차질이나 분실이 발생할 수 있으며, 이로 인한 모든 책임은 본인에게 있으므로 정확한 주소를 입력해 주세요.</p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">실제 입금자명 (다를 경우만 입력)</label>
+                <input type="text" id="depositor_name" placeholder="미입력시 주문자명과 동일하게 처리" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">배송 메모</label>
+                <input type="text" id="memo" placeholder="부재시 문 앞에 놓아주세요" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">주문 조회 비밀번호 4자리 <span class="text-red-500">*</span></label>
+                <input type="password" id="order_password" required maxlength="4" placeholder="숫자 4자리 입력" class="w-full text-center tracking-widest text-base bg-slate-50 border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <p class="text-[11px] text-slate-400 mt-1">추후 '내 주문 내역 확인하기'에서 내역을 조회할 때 사용됩니다.</p>
+            </div>
+
+            <div class="bg-indigo-50 rounded-xl p-4 flex justify-between items-center mt-6">
+                <div>
+                    <span class="text-xs text-indigo-700 font-medium">최종 결제 금액 (상품+배송비)</span>
+                    <div id="total_display" class="text-xl font-bold text-indigo-900">0원</div>
+                </div>
+                <span class="text-xs bg-indigo-200 text-indigo-800 px-2 py-1 rounded font-medium">무통장입금</span>
+            </div>
+
+            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl text-center shadow-lg transition duration-200 mt-2">
+                주문 완료 및 계좌 안내받기
+            </button>
+        </form>
+    </main>
+
+    <script>
+        // Firebase 설정 및 안전한 초기화
+        const firebaseConfig = {
+            apiKey: "AIzaSyApTZXjW03-8Z2AMh8uOksT7LzM-hwX39I",
+            authDomain: "oneul-hankki.firebaseapp.com",
+            databaseURL: "https://oneul-hankki-default-rtdb.firebaseio.com",
+            projectId: "oneul-hankki",
+            storageBucket: "oneul-hankki.firebasestorage.app",
+            messagingSenderId: "512249280108",
+            appId: "1:512249280108:web:8ba0d79e819c7ec43c0a49"
+        };
+
+        let db = null;
+        try {
+            if (typeof firebase !== 'undefined') {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                db = firebase.database();
+            }
+        } catch (e) {
+            console.error("Firebase 초기화 오류:", e);
+        }
+
+        let cartItems = [];
+        let productSubtotalVal = 0;
+        let shippingFeeVal = 3500;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            try {
+                const rawCartData = urlParams.get('cart_data');
+                if (rawCartData) {
+                    cartItems = JSON.parse(decodeURIComponent(rawCartData));
+                }
+            } catch (e) {
+                console.error('장바구니 파싱 실패', e);
+            }
+
+            if (cartItems.length === 0) {
+                try {
+                    cartItems = JSON.parse(localStorage.getItem('store_cart') || '[]');
+                } catch (e) {}
+            }
+
+            try {
+                const savedUser = JSON.parse(localStorage.getItem('store_logged_in_user') || 'null');
+                if (savedUser) {
+                    if (savedUser.name) document.getElementById('buyer_name').value = savedUser.name;
+                    if (savedUser.phone) document.getElementById('buyer_phone').value = savedUser.phone;
+                    if (savedUser.address) document.getElementById('shipping_address').value = savedUser.address;
+                }
+            } catch (e) {
+                console.error('회원 정보 연동 실패', e);
+            }
+
+            renderOrderSheet();
+        });
+
+        function renderOrderSheet() {
+            const container = document.getElementById('cart_items_container');
+            const countLabel = document.getElementById('cart_item_count');
+            const subtotalLabel = document.getElementById('product_subtotal');
+            const shippingLabel = document.getElementById('shipping_fee_display');
+            const totalDisplay = document.getElementById('total_display');
+
+            if (cartItems.length === 0) {
+                container.innerHTML = `<div class="text-xs text-slate-400 text-center py-4">주문할 상품이 없습니다.</div>`;
+                countLabel.innerText = '0개 상품';
+                subtotalLabel.innerText = '0원';
+                totalDisplay.innerText = '3,500원';
+                return;
+            }
+
+            let totalQty = 0;
+            productSubtotalVal = 0;
+            let html = '';
+
+            cartItems.forEach(item => {
+                const itemTotal = (item.price || 0) * (item.qty || 1);
+                productSubtotalVal += itemTotal;
+                totalQty += (item.qty || 1);
+
+                html += `
+                    <div class="flex justify-between items-center py-2 text-xs">
+                        <div class="flex-1 pr-2">
+                            <span class="font-bold text-slate-800 block">${item.name}</span>
+                            <span class="text-slate-400">${Number(item.price || 0).toLocaleString()}원 × ${item.qty}개</span>
+                        </div>
+                        <span class="font-bold text-slate-900">${itemTotal.toLocaleString()}원</span>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+            countLabel.innerText = `${totalQty}개 상품`;
+            subtotalLabel.innerText = productSubtotalVal.toLocaleString() + '원';
+
+            shippingFeeVal = productSubtotalVal >= 50000 ? 0 : 3500;
+            shippingLabel.innerText = shippingFeeVal === 0 ? '무료배송' : '3,500원';
+
+            const finalTotal = productSubtotalVal + shippingFeeVal;
+            totalDisplay.innerText = finalTotal.toLocaleString() + '원';
+        }
+
+        function handleSubmit(event) {
+            event.preventDefault();
+
+            if (cartItems.length === 0) {
+                alert('장바구니가 비어 있습니다.');
+                return;
+            }
+
+            const name = document.getElementById('buyer_name').value.trim();
+            const phone = document.getElementById('buyer_phone').value.trim();
+            const address = document.getElementById('shipping_address').value.trim();
+            const depositor = document.getElementById('depositor_name').value.trim() || name;
+            const memo = document.getElementById('memo').value.trim();
+            const password = document.getElementById('order_password').value.trim();
+
+            if (password.length !== 4) {
+                alert('주문 조회 비밀번호는 숫자 4자리로 입력해주세요.');
+                return;
+            }
+
+            const orderId = 'ORD-' + Math.floor(100000 + Math.random() * 900000);
+            const finalTotal = productSubtotalVal + shippingFeeVal;
+            const fullProductText = cartItems.map(i => `${i.name} (${i.qty}개)`).join('\n');
+            const cartDataStr = encodeURIComponent(JSON.stringify(cartItems));
+
+            const newOrder = {
+                orderId: orderId,
+                name: name,
+                phone: phone,
+                address: address,
+                depositor: depositor,
+                memo: memo,
+                password: password,
+                product: fullProductText,
+                items: cartItems, 
+                price: finalTotal,
+                date: new Date().toISOString().replace('T', ' ').substring(0, 16),
+                status: '입금대기',
+                isMember: false
+            };
+
+            // 1. LocalStorage 저장 (백업용)
+            try {
+                let allOrders = JSON.parse(localStorage.getItem('store_orders') || '[]');
+                allOrders.unshift(newOrder);
+                localStorage.setItem('store_orders', JSON.stringify(allOrders));
+            } catch (e) {
+                console.error('주문 저장 실패', e);
+            }
+
+            // 2. Firebase Realtime Database 실시간 전송 (핵심)
+            if (db) {
+                db.ref('store_orders').push(newOrder)
+                  .then(() => {
+                      console.log("Firebase 주문 전송 성공");
+                  })
+                  .catch((err) => {
+                      console.error("Firebase 주문 전송 실패:", err);
+                  });
+            } else {
+                console.error("Firebase DB 객체가 초기화되지 않았습니다.");
+            }
+
+            // 장바구니 비우기
+            localStorage.removeItem('store_cart');
+
+            const params = new URLSearchParams({
+                order_id: orderId,
+                name: name,
+                phone: phone,
+                password: password,
+                full_product: fullProductText,
+                price: finalTotal,
+                depositor: depositor,
+                cart_data: cartDataStr
+            });
+
+            location.href = `order-complete.html?${params.toString()}`;
+        }
+    </script>
+</body>
+</html>
