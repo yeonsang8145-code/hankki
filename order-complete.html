@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>주문 완료</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    </style>
+</head>
+<body class="text-slate-800 antialiased pb-12">
+    <header class="bg-emerald-600 text-white py-4 px-4 shadow-md sticky top-0 z-50">
+        <div class="max-w-md mx-auto text-center">
+            <h1 class="text-lg font-bold">🎉 주문이 정상 접수되었습니다</h1>
+        </div>
+    </header>
+
+    <main class="max-w-md mx-auto p-4 mt-4 space-y-3">
+        <div class="bg-white rounded-xl shadow-sm p-6 text-center border border-slate-100">
+            <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-3">✓</div>
+            <h2 id="welcome_msg" class="text-xl font-bold text-slate-900">고객님, 감사합니다!</h2>
+            <p class="text-slate-500 text-sm mt-1">아래 계좌로 입금해 주시면 확인 후 빠른 배송을 도와드립니다.</p>
+
+            <div class="bg-slate-50 rounded-xl p-4 my-6 text-left space-y-3 border border-slate-200">
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-500">주문번호</span>
+                    <span id="order_id_val" class="font-semibold text-slate-700">-</span>
+                </div>
+                
+                <div class="border-t border-slate-200 pt-2">
+                    <span class="text-xs text-slate-500 block mb-1.5 font-medium">주문 상품 전체 목록</span>
+                    <div id="product_val" class="space-y-1.5 bg-white p-3 rounded-lg border border-slate-200 text-sm leading-relaxed">
+                        <!-- 동적 삽입 -->
+                    </div>
+                </div>
+
+                <div class="flex justify-between text-sm pt-1">
+                    <span class="text-slate-500">입금할 금액</span>
+                    <span id="price_val" class="font-bold text-emerald-600 text-base">-</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-500">입금 계좌</span>
+                    <span class="font-medium text-slate-800 text-right">국민은행 <br><span class="font-bold text-indigo-600">123456-04-123456</span></span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-500">예금주</span>
+                    <span class="font-medium text-slate-800">(주)연상네트웍스</span>
+                </div>
+                <div class="flex justify-between text-sm pt-2 border-t border-slate-200">
+                    <span class="text-slate-500">입금자명 (확인용)</span>
+                    <span id="depositor_val" class="font-bold text-red-500">-</span>
+                </div>
+            </div>
+
+            <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 text-left mb-6">
+                ⚠️ 주문자 성함 또는 실제 입금자 성함이 일치해야 입금 확인이 원활합니다.
+            </div>
+
+            <button onclick="openCheckMyOrderModal()" class="block w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-3.5 rounded-xl text-center transition duration-200 text-sm mb-2">
+                나의 주문 내역 확인하기
+            </button>
+            <a href="index.html" class="block w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl text-center shadow transition duration-200 text-sm">
+                다른 상품 쇼핑하러 가기
+            </a>
+        </div>
+    </main>
+
+    <!-- 내 주문 내역 확인을 위한 모달 -->
+    <div id="check_password_modal" class="fixed inset-0 bg-slate-900/60 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-xl">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="font-bold text-base text-slate-900">🔒 주문 조회 확인</h3>
+                <button onclick="closeCheckPasswordModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold">✕</button>
+            </div>
+            <p class="text-xs text-slate-500">주문 시 입력하신 <strong>주문자 성함</strong>과 <strong>비밀번호 4자리</strong>를 입력해 주세요.</p>
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-600 mb-1">주문자 성함</label>
+                    <input type="text" id="input_check_name" placeholder="예: 홍길동" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-600 mb-1">비밀번호 4자리</label>
+                    <input type="password" id="input_check_pw" maxlength="4" placeholder="숫자 4자리" class="w-full text-center tracking-widest text-lg bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+            </div>
+
+            <div class="flex space-x-2 pt-2">
+                <button onclick="verifyAndOpenOrders()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl text-sm transition">확인</button>
+                <button onclick="closeCheckPasswordModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-4 py-3 rounded-xl text-sm transition">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        let orderData = null;
+        try {
+            const allOrders = JSON.parse(localStorage.getItem('store_orders') || '[]');
+            const queryOrderId = urlParams.get('order_id');
+            if (queryOrderId) {
+                orderData = allOrders.find(o => o.orderId === queryOrderId);
+            }
+            if (!orderData && allOrders.length > 0) {
+                orderData = allOrders[0];
+            }
+        } catch (e) {
+            console.error('주문 정보 로드 실패', e);
+        }
+
+        // URL 파라미터 내 cart_data가 있는 경우 우선적으로 파싱하여 items 복원
+        let parsedCartItems = [];
+        try {
+            const cartDataParam = urlParams.get('cart_data');
+            if (cartDataParam) {
+                parsedCartItems = JSON.parse(decodeURIComponent(cartDataParam));
+            }
+        } catch (e) {}
+
+        if (!orderData) {
+            const rawProduct = urlParams.get('product') || '오늘한끼냉동 상품';
+            orderData = {
+                orderId: urlParams.get('order_id') || 'ORD-' + Math.floor(100000 + Math.random() * 900000),
+                name: urlParams.get('name') || '고객',
+                phone: urlParams.get('phone') || '010-0000-0000',
+                address: urlParams.get('address') || '배송주소 미입력',
+                password: urlParams.get('password') || '1234',
+                product: rawProduct,
+                items: parsedCartItems.length > 0 ? parsedCartItems : [{ name: rawProduct, qty: 1, price: Number(urlParams.get('price')) || 0 }],
+                price: Number(urlParams.get('price')) || 0,
+                depositor: urlParams.get('depositor') || urlParams.get('name') || '고객',
+                memo: urlParams.get('memo') || '',
+                date: urlParams.get('date') || new Date().toISOString().replace('T', ' ').substring(0, 16),
+                status: '입금대기'
+            };
+        } else if ((!orderData.items || orderData.items.length === 0) && parsedCartItems.length > 0) {
+            orderData.items = parsedCartItems;
+        }
+
+        document.getElementById('welcome_msg').innerText = `${orderData.name} 고객님, 감사합니다!`;
+        document.getElementById('order_id_val').innerText = orderData.orderId;
+        
+        // 상품 목록 렌더링 시 qty와 quantity 모두 대응하도록 안전하게 처리
+        const productContainer = document.getElementById('product_val');
+        const itemsToDisplay = orderData.items || parsedCartItems;
+
+        if (itemsToDisplay && Array.isArray(itemsToDisplay) && itemsToDisplay.length > 0) {
+            productContainer.innerHTML = itemsToDisplay.map((item, idx) => {
+                const quantity = item.qty || item.quantity || 1;
+                const itemPrice = Number(item.price) || 0;
+                const itemTotal = itemPrice * quantity;
+                return `
+                    <div class="flex justify-between items-center text-xs text-slate-800 pb-1.5 ${idx !== itemsToDisplay.length - 1 ? 'border-b border-slate-100 mb-1.5' : ''}">
+                        <span class="font-medium flex-1">• ${item.name} ${item.option ? `(${item.option})` : ''}</span>
+                        <span class="text-slate-600 font-semibold ml-2">${quantity}개 / ${itemTotal.toLocaleString()}원</span>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            productContainer.innerHTML = `<div class="font-bold text-slate-900 text-sm">${orderData.product || '상품 정보 없음'}</div>`;
+        }
+
+        document.getElementById('price_val').innerText = Number(orderData.price || 0).toLocaleString() + '원';
+        document.getElementById('depositor_val').innerText = orderData.depositor;
+
+        function saveOrderHistory(newOrder) {
+            try {
+                let allOrders = JSON.parse(localStorage.getItem('store_orders') || '[]');
+                if (!allOrders.some(o => o.orderId === newOrder.orderId)) {
+                    allOrders.unshift(newOrder);
+                    localStorage.setItem('store_orders', JSON.stringify(allOrders));
+                }
+            } catch (e) {
+                console.error('주문 저장 실패', e);
+            }
+        }
+
+        saveOrderHistory(orderData);
+
+        function openCheckMyOrderModal() {
+            document.getElementById('check_password_modal').classList.remove('hidden');
+            document.getElementById('input_check_name').value = orderData.name;
+            document.getElementById('input_check_pw').focus();
+        }
+
+        function closeCheckPasswordModal() {
+            document.getElementById('check_password_modal').classList.add('hidden');
+        }
+
+        function verifyAndOpenOrders() {
+            const inputName = (document.getElementById('input_check_name').value || '').trim();
+            const inputPw = (document.getElementById('input_check_pw').value || '').trim();
+
+            if (!inputName || !inputPw) {
+                alert('주문자 성함과 비밀번호를 모두 입력해주세요.');
+                return;
+            }
+
+            try {
+                const allOrders = JSON.parse(localStorage.getItem('store_orders') || '[]');
+                const found = allOrders.find(o => o.name === inputName && o.password === inputPw);
+
+                if (found) {
+                    let summaryText = `[조회 성공]\n주문번호: ${found.orderId}\n\n[주문 상품 목록]\n`;
+                    if (found.items && Array.isArray(found.items)) {
+                        summaryText += found.items.map(i => `- ${i.name} (${i.qty || i.quantity || 1}개)`).join('\n');
+                    } else {
+                        summaryText += found.product;
+                    }
+                    summaryText += `\n\n상태: ${found.status}`;
+                    
+                    alert(summaryText);
+                    closeCheckPasswordModal();
+                } else {
+                    alert('일치하는 주문 내역이 없거나 성함/비밀번호가 틀렸습니다.');
+                }
+            } catch (e) {
+                alert('데이터 조회 중 오류가 발생했습니다.');
+            }
+        }
+    </script>
+</body>
+</html>
