@@ -179,7 +179,7 @@
         function checkAdminAuth() {
             if (sessionStorage.getItem('store_admin_authed') === 'true') return;
             const password = prompt('🔐 상품 편집 관리자 비밀번호를 입력하세요:');
-            if (password === '1234') { // 원하시는 비밀번호로 수정 가능
+            if (password === 'kwakys010%') { // 원하시는 비밀번호로 수정 가능
                 sessionStorage.setItem('store_admin_authed', 'true');
             } else {
                 alert('비밀번호가 일치하지 않습니다.');
