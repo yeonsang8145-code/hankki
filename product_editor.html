@@ -109,6 +109,59 @@
                     </div>
                 </div>
 
+                <!-- [변경 완료] 상품 추가 정보 사진 (구매 고객 노출용 3장 고정) 영역 -->
+                <div class="md:col-span-2 bg-blue-50/40 border border-blue-200 rounded-2xl p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-slate-700">📸 상품 추가 정보 사진 (구매 고객 노출용 3장 고정)</label>
+                        <span class="text-[11px] text-blue-600 font-semibold">추가 사진 3장</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500">구매 고객에게 상세 페이지나 안내 창에서 추가로 보여질 상품 정보 사진 3장을 각각 등록합니다.</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <!-- 추가 정보 사진 1 -->
+                        <div class="bg-white border border-slate-200 rounded-xl p-3 flex flex-col items-center space-y-2">
+                            <span class="text-[11px] font-bold text-slate-500">추가 정보 사진 1 / 3</span>
+                            <div class="w-full h-32 bg-slate-100 rounded-lg overflow-hidden relative flex items-center justify-center border">
+                                <img id="extra_img_preview_0" src="" class="w-full h-full object-cover hidden" alt="추가정보1">
+                                <span id="extra_img_placeholder_0" class="text-xs text-slate-400">사진 없음</span>
+                                <button type="button" id="extra_img_del_0" onclick="removeExtraImage(0)" class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 text-[10px] hidden items-center justify-center shadow">✕</button>
+                            </div>
+                            <label class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium py-1.5 rounded-lg text-center cursor-pointer transition">
+                                파일 선택
+                                <input type="file" accept="image/*" onchange="handleExtraImageUpload(event, 0)" class="hidden">
+                            </label>
+                        </div>
+
+                        <!-- 추가 정보 사진 2 -->
+                        <div class="bg-white border border-slate-200 rounded-xl p-3 flex flex-col items-center space-y-2">
+                            <span class="text-[11px] font-bold text-slate-500">추가 정보 사진 2 / 3</span>
+                            <div class="w-full h-32 bg-slate-100 rounded-lg overflow-hidden relative flex items-center justify-center border">
+                                <img id="extra_img_preview_1" src="" class="w-full h-full object-cover hidden" alt="추가정보2">
+                                <span id="extra_img_placeholder_1" class="text-xs text-slate-400">사진 없음</span>
+                                <button type="button" id="extra_img_del_1" onclick="removeExtraImage(1)" class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 text-[10px] hidden items-center justify-center shadow">✕</button>
+                            </div>
+                            <label class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium py-1.5 rounded-lg text-center cursor-pointer transition">
+                                파일 선택
+                                <input type="file" accept="image/*" onchange="handleExtraImageUpload(event, 1)" class="hidden">
+                            </label>
+                        </div>
+
+                        <!-- 추가 정보 사진 3 -->
+                        <div class="bg-white border border-slate-200 rounded-xl p-3 flex flex-col items-center space-y-2">
+                            <span class="text-[11px] font-bold text-slate-500">추가 정보 사진 3 / 3</span>
+                            <div class="w-full h-32 bg-slate-100 rounded-lg overflow-hidden relative flex items-center justify-center border">
+                                <img id="extra_img_preview_2" src="" class="w-full h-full object-cover hidden" alt="추가정보3">
+                                <span id="extra_img_placeholder_2" class="text-xs text-slate-400">사진 없음</span>
+                                <button type="button" id="extra_img_del_2" onclick="removeExtraImage(2)" class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 text-[10px] hidden items-center justify-center shadow">✕</button>
+                            </div>
+                            <label class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium py-1.5 rounded-lg text-center cursor-pointer transition">
+                                파일 선택
+                                <input type="file" accept="image/*" onchange="handleExtraImageUpload(event, 2)" class="hidden">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 상품 태그 / 상태 -->
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">상품 태그 / 상태</label>
@@ -122,7 +175,7 @@
                     </select>
                 </div>
 
-                <!-- 보관 온도 태그 선택 (신규 추가) -->
+                <!-- 보관 온도 태그 선택 -->
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">보관 온도 태그 선택 <span class="text-red-500">*</span></label>
                     <select id="p_storage_type" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
@@ -299,13 +352,14 @@
         const db = firebase.database();
 
         let currentPhotos = [];
+        let currentExtraImages = ['', '', '']; // [변경] 추가 정보 사진 3장 저장 배열
         let globalProducts = [];
 
         const defaultProducts = [
-            { name: '수제 프리미엄 만두 세트 (1kg)', price: 18000, mainCategory: '🧊냉동', category: '고기만두', img: '🥟', photos: ['https://images.unsplash.com/photo-1541529086526-db283c563270?w=500&auto=format&fit=crop&q=60'], badge: '인기상품 🔥', storageType: '냉동', desc: '속이 꽉 찬 육즙 가득 수제 만두' },
-            { name: '한돈 냉동 삼겹살 구이용 (500g)', price: 14000, mainCategory: '🧊냉동', category: '돼지', img: '🥩', photos: ['https://images.unsplash.com/photo-1603048588665-791ca8aea617?w=500&auto=format&fit=crop&q=60'], badge: '한정특가 ⚡', storageType: '냉동', desc: '고소하고 부드러운 국내산 한돈 삼겹살' },
-            { name: '오늘한끼 볶음밥 골라담기', price: 22000, mainCategory: '🧊냉동', category: '김치볶음밥', img: '🍳', photos: ['https://images.unsplash.com/photo-1512058564366-18510be2db19?w=500&auto=format&fit=crop&q=60'], badge: '신상품 ✨', storageType: '냉동', desc: '간편하게 즐기는 든든한 한 끼 볶음밥' },
-            { name: '매콤 닭다리살 순살 볶음 (400g)', price: 13000, mainCategory: '🍳간편요리', category: '국/탕류', img: '🍗', photos: ['https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=500&auto=format&fit=crop&q=60'], badge: '상시판매 📦', storageType: '냉장', desc: '술안주 및 밥반찬으로 제격인 매콤 순살 닭볶음' }
+            { name: '수제 프리미엄 만두 세트 (1kg)', price: 18000, mainCategory: '🧊냉동', category: '고기만두', img: '🥟', photos: ['https://images.unsplash.com/photo-1541529086526-db283c563270?w=500&auto=format&fit=crop&q=60'], extraImages: ['', '', ''], badge: '인기상품 🔥', storageType: '냉동', desc: '속이 꽉 찬 육즙 가득 수제 만두' },
+            { name: '한돈 냉동 삼겹살 구이용 (500g)', price: 14000, mainCategory: '🧊냉동', category: '돼지', img: '🥩', photos: ['https://images.unsplash.com/photo-1603048588665-791ca8aea617?w=500&auto=format&fit=crop&q=60'], extraImages: ['', '', ''], badge: '한정특가 ⚡', storageType: '냉동', desc: '고소하고 부드러운 국내산 한돈 삼겹살' },
+            { name: '오늘한끼 볶음밥 골라담기', price: 22000, mainCategory: '🧊냉동', category: '김치볶음밥', img: '🍳', photos: ['https://images.unsplash.com/photo-1512058564366-18510be2db19?w=500&auto=format&fit=crop&q=60'], extraImages: ['', '', ''], badge: '신상품 ✨', storageType: '냉동', desc: '간편하게 즐기는 든든한 한 끼 볶음밥' },
+            { name: '매콤 닭다리살 순살 볶음 (400g)', price: 13000, mainCategory: '🍳간편요리', category: '국/탕류', img: '🍗', photos: ['https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=500&auto=format&fit=crop&q=60'], extraImages: ['', '', ''], badge: '상시판매 📦', storageType: '냉장', desc: '술안주 및 밥반찬으로 제격인 매콤 순살 닭볶음' }
         ];
 
         function showToast(message) {
@@ -334,6 +388,7 @@
                     if (!p.storageType) p.storageType = '냉동';
                     if (!p.photos && p.photo) p.photos = [p.photo];
                     else if (!p.photos) p.photos = [];
+                    if (!p.extraImages) p.extraImages = ['', '', '']; // [변경] 데이터 보정
                 });
 
                 renderProducts();
@@ -378,6 +433,10 @@
                     : (p.img || '🛍️');
 
                 let photoBadge = (p.photos && p.photos.length > 1) ? `<span class="text-[9px] bg-emerald-100 text-emerald-700 px-1.5 py-0.2 rounded-full font-bold ml-1">+${p.photos.length - 1}</span>` : '';
+                
+                // [변경] 추가 정보 사진 등록 개수 표시 배지
+                let extraImgCount = (p.extraImages) ? p.extraImages.filter(Boolean).length : 0;
+                let extraImgBadge = extraImgCount > 0 ? `<span class="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded-full font-bold ml-1">추가사진${extraImgCount}/3</span>` : '';
 
                 html += `
                     <div class="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition">
@@ -391,6 +450,7 @@
                                     <span class="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-semibold flex-shrink-0">${p.storageType || '냉동'}</span>
                                     <span class="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-semibold flex-shrink-0">${p.badge}</span>
                                     ${photoBadge}
+                                    ${extraImgBadge}
                                 </div>
                                 <p class="text-xs text-slate-500 mt-0.5 truncate">${p.desc || ''}</p>
                                 <span class="text-xs font-bold text-emerald-600 mt-1 inline-block">${Number(p.price || 0).toLocaleString()}원</span>
@@ -426,7 +486,19 @@
             }
 
             let products = [...getProducts()];
-            const newObj = { name, price, mainCategory, category, img, photos: [...currentPhotos], badge, storageType, desc };
+            // [변경] extraImages 필드 포함
+            const newObj = { 
+                name, 
+                price, 
+                mainCategory, 
+                category, 
+                img, 
+                photos: [...currentPhotos], 
+                extraImages: [...currentExtraImages], 
+                badge, 
+                storageType, 
+                desc 
+            };
 
             if (editIndex === -1) {
                 products.push(newObj);
@@ -438,7 +510,6 @@
             resetForm();
         }
 
-        // 💡 사진 업로드 제한을 최대 5장으로 확장 처리
         function handleImageUpload(event) {
             const files = event.target.files;
             if (!files || files.length === 0) return;
@@ -533,6 +604,80 @@
             showToast('모든 사진이 제거되었습니다.');
         }
 
+        // [변경] 추가 정보 사진 업로드 및 압축 핸들러
+        function handleExtraImageUpload(event, slotIndex) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            const file = files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 500;
+                    const MAX_HEIGHT = 500;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    currentExtraImages[slotIndex] = compressedDataUrl;
+                    updateExtraImageUI();
+                    showToast(`추가 정보 사진 ${slotIndex + 1}이 등록되었습니다.`);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            event.target.value = '';
+        }
+
+        // [변경] 추가 정보 사진 삭제 핸들러
+        function removeExtraImage(slotIndex) {
+            currentExtraImages[slotIndex] = '';
+            updateExtraImageUI();
+            showToast(`추가 정보 사진 ${slotIndex + 1}이 제거되었습니다.`);
+        }
+
+        // [변경] 추가 정보 사진 UI 동기화 함수
+        function updateExtraImageUI() {
+            for (let i = 0; i < 3; i++) {
+                const preview = document.getElementById(`extra_img_preview_${i}`);
+                const placeholder = document.getElementById(`extra_img_placeholder_${i}`);
+                const delBtn = document.getElementById(`extra_img_del_${i}`);
+
+                if (currentExtraImages[i] && currentExtraImages[i].trim() !== '') {
+                    preview.src = currentExtraImages[i];
+                    preview.classList.remove('hidden');
+                    placeholder.classList.add('hidden');
+                    delBtn.classList.remove('hidden');
+                    delBtn.classList.add('flex');
+                } else {
+                    preview.src = '';
+                    preview.classList.add('hidden');
+                    placeholder.classList.remove('hidden');
+                    delBtn.classList.add('hidden');
+                    delBtn.classList.remove('flex');
+                }
+            }
+        }
+
         function setEmoji(emoji) {
             document.getElementById('p_img').value = emoji;
         }
@@ -548,7 +693,9 @@
             document.getElementById('p_storage_type').value = '냉동';
             document.getElementById('p_desc').value = '';
             currentPhotos = [];
+            currentExtraImages = ['', '', '']; // 초기화
             updatePhotoPreviews();
+            updateExtraImageUI();
             
             document.getElementById('form_title').innerText = '➕ 새 상품 추가하기';
             document.getElementById('cancel_btn').classList.remove('hidden');
@@ -569,7 +716,9 @@
             document.getElementById('p_desc').value = p.desc || '';
             
             currentPhotos = p.photos ? [...p.photos] : [];
+            currentExtraImages = p.extraImages ? [...p.extraImages] : ['', '', '']; // [변경] 불러오기
             updatePhotoPreviews();
+            updateExtraImageUI();
             
             document.getElementById('form_title').innerText = `✏️ '${p.name || '상품'}' 수정 모드`;
             document.getElementById('cancel_btn').classList.remove('hidden');
@@ -588,7 +737,9 @@
             document.getElementById('p_storage_type').value = '냉동';
             document.getElementById('p_desc').value = '';
             currentPhotos = [];
+            currentExtraImages = ['', '', '']; // 초기화
             updatePhotoPreviews();
+            updateExtraImageUI();
             document.getElementById('cancel_btn').classList.add('hidden');
         }
 
