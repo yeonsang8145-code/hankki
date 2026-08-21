@@ -7,20 +7,17 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        /* 데스크탑 환경 마우스 오버 지원 */
         @media (min-width: 768px) {
             .has-submenu:hover > .submenu { display: block; }
             .has-sub-submenu:hover > .sub-submenu { display: block; }
         }
-        /* 이미지 선명도 향상 렌더링 설정 */
         .crisp-image {
             image-rendering: -webkit-optimize-contrast;
             image-rendering: crisp-edges;
         }
     </style>
-    <!-- Firebase App (필수) -->
+    <!-- Firebase App & Realtime Database -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <!-- Firebase Realtime Database (필수) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <script>
@@ -42,7 +39,7 @@
 <body class="text-slate-800 antialiased pb-24" onclick="closeAllSubmenus(event)">
 
     <!-- 상단 헤더 -->
-<header class="bg-slate-900 text-white py-4 px-6 shadow-md sticky top-0 z-40">
+    <header class="bg-slate-900 text-white py-4 px-6 shadow-md sticky top-0 z-40">
         <div class="max-w-4xl mx-auto flex justify-between items-center">
             <div class="flex items-center space-x-2 cursor-pointer" onclick="location.href='index.html'">
                 <span class="text-xl">🥩</span>
@@ -56,19 +53,16 @@
 
     <main class="max-w-4xl mx-auto p-4 md:p-6 space-y-6">
         
-        <!-- 📂 다단계 카테고리 네비게이션 바 -->
+        <!-- 카테고리 네비게이션 -->
         <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 relative z-30">
             <div class="flex items-center justify-between mb-2 pb-2 border-b border-slate-100">
                 <span class="text-xs font-bold text-slate-700 flex items-center gap-1">📂 전체 상품 카테고리</span>
                 <span id="current_path_display" class="text-[11px] text-indigo-600 font-semibold">선택: 전체보기</span>
             </div>
-            
-            <ul id="main_category_menu" class="flex flex-wrap gap-2 text-xs">
-                <!-- 동적 렌더링 영역 -->
-            </ul>
+            <ul id="main_category_menu" class="flex flex-wrap gap-2 text-xs"></ul>
         </div>
 
-        <!-- 브랜드 배너 -->
+        <!-- 메인 배너 -->
         <div class="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-2xl p-6 shadow-md flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
                 <span class="text-xs bg-indigo-500/30 text-indigo-300 px-2.5 py-1 rounded-full font-semibold">신선식품 직배송</span>
@@ -77,16 +71,14 @@
             </div>
         </div>
 
-        <!-- 상품 목록 섹션 -->
+        <!-- 상품 목록 -->
         <div class="space-y-4">
             <h3 class="font-bold text-slate-800 text-base flex items-center justify-between">
                 <span>🛒 판매 중인 상품 목록 <span class="text-xs text-indigo-600 font-normal ml-1">*(상품을 누르면 상세 페이지가 열립니다)*</span></span>
                 <span id="product_count_badge" class="text-xs text-slate-500 font-normal">0개 상품</span>
             </h3>
 
-            <div id="store_product_grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- 동적 상품 렌더링 -->
-            </div>
+            <div id="store_product_grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
         </div>
 
     </main>
@@ -299,9 +291,9 @@
                         <span id="detail_price" class="text-xl font-extrabold text-emerald-600">0원</span>
                     </div>
                 </div>
-<!-- 📌 상세 페이지 사진 파일 밑에 추가된 안내 사항 섹션 (이 위치에 삽입) -->
+
+                <!-- 안내 사항 -->
                 <div class="bg-white border border-slate-200 rounded-2xl p-4 space-y-5 text-xs text-slate-700 shadow-sm mt-4">                                        
-                    <!-- 꼭 읽어주세요! -->                    
                     <div class="bg-amber-50 border border-amber-200 rounded-xl p-3.5 space-y-1.5">                        
                         <h4 class="font-bold text-amber-900 text-xs flex items-center gap-1.5">                            
                             <span>⚠️</span> 꼭 읽어주세요!                        
@@ -309,65 +301,9 @@
                         <p class="leading-relaxed text-amber-950">                            
                             주말 및 공휴일 택배 수령이 불가능 할 시 냉장·냉동식품의 특성상 제품의 변질을 방지하고자 차주 월요일 일괄발송 하오니 주말 및 공휴일에 택배 수령이 가능하신 분은 꼭 배송메모란에 남겨주시기 바랍니다.                        
                         </p>                    
-                    </div>
-                    <!-- FAQ (자주 묻는 질문) -->                    
-                    <div class="space-y-2.5">                        
-                        <h4 class="font-bold text-slate-900 text-xs flex items-center gap-1.5 border-b pb-1.5">                            
-                            <span>❓</span> FAQ (자주 묻는 질문)                        
-                        </h4>                        
-                        <div class="space-y-2.5 pl-1">                            
-                            <div>                                
-                                <p class="font-bold text-slate-800">• 지정일에 받을 수 있게 보내주세요.</p>                                
-                                <p class="text-slate-600 mt-0.5">지정일 배송은 불가합니다. (받으실 날짜 하루 전 낮 12시 이전까지 주문해주세요.)</p>                            
-                            </div>                            
-                            <div>                                
-                                <p class="font-bold text-slate-800">• 지금 주문했는데 언제 배송되나요?</p>                                
-                                <p class="text-slate-600 mt-0.5">낮 12시 이전 주문 상품은 당일 발송되며, 낮 12시 이후 주문 상품은 익일 일괄 발송됩니다.</p>                            
-                            </div>                            
-                            <div>                                
-                                <p class="font-bold text-slate-800">• 발송 문자는 왔는데 왜 상품 준비 중인가요?</p>                                
-                                <p class="text-slate-600 mt-0.5">택배 송장 출력 시 자동으로 문자가 발송되는 시스템으로 송장 출력 후 제품 포장 및 택배사 집하가 이루어지기 때문에 배송 추적에 상품 준비중으로 표기될 수 있습니다.</p>                            
-                            </div>                        
-                        </div>                    
-                    </div>
-                    <!-- NOTICE (배송 | 교환 | 반품안내) -->                    
-                    <div class="space-y-3 pt-3 border-t border-slate-100">                        
-                        <h4 class="font-bold text-slate-900 text-xs flex items-center gap-1.5">                            
-                            <span>📢</span> NOTICE : 배송 | 교환 | 반품안내                        
-                        </h4>                        
-                        <p class="text-slate-500">평일 주문 마감시간은 낮 12시까지 입니다.</p>
-                        <!-- 배송안내 -->                        
-                        <div class="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200">                            
-                            <h5 class="font-bold text-slate-800">📦 배송안내</h5>                            
-                            <ul class="list-disc pl-4 space-y-1 text-slate-600">                                
-                                <li>배송비 : 기본 배송료는 3,000원입니다. (제주지역 외 도서·산간·오지 및 일부 지역은 배송이 불가하며, 제주지역은 기본 배송료 이외에 4,500원의 추가 배송료(도선료)가 추가됩니다.) 50,000원 이상 구매 시 무료배송입니다.</li>                                
-                                <li>본 상품의 평균 배송일은 2일입니다. (입금 확인 후) [배송 예정일은 주문 시점(주문 순서)에 따른 유동성이 발생하므로 평균 배송일과는 차이가 발생할 수 있습니다.]</li>                                
-                                <li>본 상품의 배송 가능일은 2일입니다. 배송 가능일이란 본 상품을 주문하신 고객님께 상품 배송이 가능한 기간을 의미합니다. (단, 연휴 및 공휴일은 기간 계산 시 제외하며 현금 주문일 경우 입금일 기준입니다.)</li>                                
-                                <li>냉동·냉장 제품은 신선도를 위해 주말 또는 공휴일 전날에는 발송하지 않으며 휴일이 지난 다음날 발송해 드립니다.</li>                                
-                                <li>냉동·냉장 제품 주문 후 토요일 제품 수령이 불가능하시면 꼭 주문 시 또는 배송 요청 사항란에 토요일 배송 금지 또는 고객센터로 연락 주세요.</li>                                
-                                <li>수령인명, 연락처, 주소가 동일한 주문 건은 별도의 안내 없이 묶음 배송(합포장)되어 발송됩니다.</li>                            
-                            </ul>                        
-                        </div>
-                        <!-- 교환·반품 -->                        
-                        <div class="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200">                            
-                            <h5 class="font-bold text-slate-800">🔄 교환·반품</h5>                            
-                            <ul class="list-disc pl-4 space-y-1 text-slate-600">                                
-                                <li>냉동·냉장 제품으로 고객 변심 교환, 반품이 불가능한 점 알려드립니다.</li>                                
-                                <li>고객님의 부재 또는 미수취로 인하여 제품의 변질 시에는 환불 또는 교환이 절대 불가능함을 알려드립니다.</li>                                
-                                <li>상품의 인수 후에는 제품 하자나 오배송의 경우를 제외한 고객님의 단순 변심에 의한 교환, 반품이 불가할 수 있습니다.</li>                            
-                            </ul>                        
-                        </div>
-                        <!-- 환불안내 -->                        
-                        <div class="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200">                            
-                            <h5 class="font-bold text-slate-800">💰 환불안내</h5>                            
-                            <ul class="list-disc pl-4 space-y-1 text-slate-600">                                
-                                <li>냉장·냉동 식품으로 출고 시 재화 등의 가치가 현저히 감소하는 특성이 있어 환불이 불가함을 알려드립니다.</li>                                
-                                <li>단, 상품의 인수 후 제품 하자나 오배송의 경우 교환을 원치 않으실 시 환불이 가능하며, 고객님의 단순 변심에 의한 환불은 불가할 수 있습니다.</li>                            
-                            </ul>                        
-                        </div>                    
-                    </div>                
+                    </div>                  
                 </div>                
-                <!-- 안내 사항 섹션 끝 -->
+
                 <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-4">
                     <div class="flex justify-between items-center">
                         <span class="text-xs font-bold text-slate-700">구매 수량 선택</span>
@@ -381,18 +317,6 @@
                         <span class="text-xs font-bold text-slate-600">총 상품 금액</span>
                         <span id="total_price_text" class="text-lg font-extrabold text-slate-900">0원</span>
                     </div>
-                </div>
-
-                <div class="space-y-3 bg-indigo-50/50 border border-indigo-100/60 rounded-2xl p-4 text-xs text-indigo-950">
-                    <div class="font-bold flex items-center space-x-1.5 text-indigo-900">
-                        <span>📦</span>
-                        <span>오늘한끼냉동 배송 및 보관 안내</span>
-                    </div>
-                    <ul class="space-y-1.5 text-slate-600 pl-4 list-disc">
-                        <li><strong>신선 안전 포장:</strong> 상품 특성에 맞춰 안전하게 배송됩니다.</li>
-                        <li><strong>보관 방법:</strong> 수령 즉시 상품 태그에 맞는 보관법(냉동/냉장/실온/상온)으로 보관해 주세요.</li>
-                        <li><strong>조리 방법:</strong> 제품별 표기된 조리법에 따라 조리하여 드시기 바랍니다.</li>
-                    </ul>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3 pt-2">
@@ -412,7 +336,6 @@
         <div class="relative max-w-5xl w-full max-h-[95vh] flex flex-col items-center justify-center" onclick="event.stopPropagation()">
             <button onclick="closePhotoPopup()" class="absolute -top-12 right-0 text-white bg-slate-800 hover:bg-slate-700 w-10 h-10 rounded-full font-bold text-lg flex items-center justify-center shadow-lg transition z-10">✕</button>
             <img id="popup_large_img" src="" class="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl border border-slate-700 crisp-image" alt="원본 상품 이미지">
-            <p class="text-xs text-slate-300 mt-3 font-semibold bg-slate-800/80 px-4 py-1.5 rounded-full backdrop-blur-sm">🔍세부 디테일 원본 크기 확인 화면입니다. (바깥쪽을 누르면 닫힙니다)</p>
         </div>
     </div>
 
@@ -469,8 +392,8 @@
                 name: "🧊냉동❄️냉장", 
                 sub: [
                     { name: "닭,돼지,소,수산물", sub: ["닭", "돼지", "소", "수산물/어류"] },
-                    { name: "볶음밥", sub: [] },
-                    { name: "돈까스/만두/치킨", sub: [] }
+                    { name: "볶음밥", sub: ["김치볶음밥", "참치볶음밥", "오돌뼈볶음밥"] },
+                    { name: "돈까스/만두/치킨", sub: ["짬뽕만두", "김치만두", "고기만두", "매콤고기만두"] }
                 ]
             },
             { 
@@ -479,7 +402,7 @@
                     { name: "국/탕류/찌개", sub: ["국", "탕", "찌개", "죽"] },
                     { name: "떡볶이", sub: [] },
                     { name: "덮밥소스", sub: [] },
-	            { name: "간식", sub: [] }
+                    { name: "간식", sub: [] }
                 ] 
             },
             { 
@@ -495,7 +418,7 @@
                 sub: [
                     { name: "스낵", sub: [] },
                     { name: "간식/건과류", sub: [] },
-		    { name: "과/채가공품", sub: [] }
+                    { name: "과/채가공품", sub: [] }
                 ] 
             },
         ];
@@ -538,15 +461,10 @@
 
         function getStorageBadgeHtml(storageType) {
             let type = storageType || '🧊냉동';
-            if (type.includes('냉장')) {
-                return `<span class="inline-block text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-semibold">❄️ 냉장</span>`;
-            } else if (type.includes('실온')) {
-                return `<span class="inline-block text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">🍃 실온</span>`;
-            } else if (type.includes('상온')) {
-                return `<span class="inline-block text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold">🌡️ 상온</span>`;
-            } else {
-                return `<span class="inline-block text-[10px] bg-sky-50 text-sky-700 px-2 py-0.5 rounded-full font-semibold">🧊 냉동</span>`;
-            }
+            if (type.includes('냉장')) return `<span class="inline-block text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-semibold">❄️ 냉장</span>`;
+            if (type.includes('실온')) return `<span class="inline-block text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">🍃 실온</span>`;
+            if (type.includes('상온')) return `<span class="inline-block text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold">🌡️ 상온</span>`;
+            return `<span class="inline-block text-[10px] bg-sky-50 text-sky-700 px-2 py-0.5 rounded-full font-semibold">🧊 냉동</span>`;
         }
 
         function filterCategory(categoryName) {
@@ -558,21 +476,14 @@
 
         function getAllTargetCategories(targetName) {
             if (targetName === '전체보기') return [];
-            
             function search(nodes) {
                 for (let node of nodes) {
                     if (typeof node === 'object') {
                         if (node.name === targetName) {
                             let results = [];
                             function extractLeafs(n) {
-                                if (!n.sub || n.sub.length === 0) {
-                                    results.push(n.name);
-                                } else {
-                                    n.sub.forEach(sub => {
-                                        if (typeof sub === 'string') results.push(sub);
-                                        else extractLeafs(sub);
-                                    });
-                                }
+                                if (!n.sub || n.sub.length === 0) results.push(n.name);
+                                else n.sub.forEach(sub => (typeof sub === 'string') ? results.push(sub) : extractLeafs(sub));
                             }
                             extractLeafs(node);
                             return results;
@@ -585,12 +496,8 @@
                 }
                 return null;
             }
-
             let subCats = search(categoryStructure);
-            if (subCats && subCats.length > 0) {
-                return subCats;
-            }
-            return [targetName];
+            return (subCats && subCats.length > 0) ? subCats : [targetName];
         }
 
         function closeAllSubmenus(event) {
@@ -601,16 +508,9 @@
         function renderCategoryMenu() {
             const menuContainer = document.getElementById('main_category_menu');
             let html = '';
-
             categoryStructure.forEach(cat => {
                 if (cat.sub.length === 0) {
-                    html += `
-                        <li>
-                            <button onclick="filterCategory('${cat.name}')" class="px-3 py-2 rounded-xl font-bold transition whitespace-nowrap bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-700">
-                                ${cat.name}
-                            </button>
-                        </li>
-                    `;
+                    html += `<li><button onclick="filterCategory('${cat.name}')" class="px-3 py-2 rounded-xl font-bold transition bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-700">${cat.name}</button></li>`;
                 } else {
                     let subHtml = '';
                     cat.sub.forEach(subItem => {
@@ -634,10 +534,9 @@
                             `;
                         }
                     });
-
                     html += `
                         <li class="relative has-submenu">
-                            <button onclick="toggleSubMenu(event, this); filterCategory('${cat.name}');" class="px-3 py-2 rounded-xl font-bold transition whitespace-nowrap bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-700 flex items-center gap-1">
+                            <button onclick="toggleSubMenu(event, this); filterCategory('${cat.name}');" class="px-3 py-2 rounded-xl font-bold transition bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-700 flex items-center gap-1">
                                 ${cat.name} <span class="text-[10px]">▼</span>
                             </button>
                             <ul class="submenu hidden absolute left-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg p-1 space-y-1 z-50">
@@ -654,15 +553,8 @@
             event.stopPropagation();
             const parentLi = button.parentElement;
             const submenu = parentLi.querySelector(':scope > ul');
-            
-            const siblings = parentLi.parentElement.querySelectorAll(':scope > li > ul');
-            siblings.forEach(ul => {
-                if (ul !== submenu) ul.classList.add('hidden');
-            });
-
-            if (submenu) {
-                submenu.classList.toggle('hidden');
-            }
+            parentLi.parentElement.querySelectorAll(':scope > li > ul').forEach(ul => { if (ul !== submenu) ul.classList.add('hidden'); });
+            if (submenu) submenu.classList.toggle('hidden');
         }
 
         function loadStoreProductsFromFirebase() {
@@ -674,14 +566,12 @@
                     allProductsData = defaultProducts;
                     firebase.database().ref('products').set(defaultProducts);
                 }
-
                 allProductsData.forEach(p => {
                     if (!p.category) p.category = '냉동식품';
                     if (!p.storageType) p.storageType = '🧊냉동';
                     if (!p.photos && p.photo) p.photos = [p.photo];
                     else if (!p.photos) p.photos = [];
                 });
-
                 renderFilteredProducts();
             });
         }
@@ -689,12 +579,10 @@
         function renderFilteredProducts() {
             const grid = document.getElementById('store_product_grid');
             let filtered = allProductsData;
-
             if (currentSelectedCategory !== '전체보기') {
                 const allowedCategories = getAllTargetCategories(currentSelectedCategory);
                 filtered = allProductsData.filter(p => allowedCategories.includes(p.category));
             }
-
             document.getElementById('product_count_badge').innerText = `${filtered.length}개 상품`;
 
             if (filtered.length === 0) {
@@ -781,21 +669,16 @@
             currentQuantity = 1;
             activePhotoIndex = 0;
             document.getElementById('order_quantity').innerText = currentQuantity;
-
             document.getElementById('detail_name').innerText = product.name;
             document.getElementById('detail_desc').innerText = product.desc || '설명이 등록되지 않은 신선 상품입니다.';
             document.getElementById('detail_price').innerText = Number(product.price).toLocaleString() + '원';
             document.getElementById('detail_badge').innerText = product.badge || '신상품';
             
             const categoryBadge = document.getElementById('detail_category_badge');
-            if (categoryBadge) {
-                categoryBadge.innerText = product.category || '냉동식품';
-            }
+            if (categoryBadge) categoryBadge.innerText = product.category || '냉동식품';
 
             const storageBadgeEl = document.getElementById('detail_storage_badge');
-            if (storageBadgeEl) {
-                storageBadgeEl.outerHTML = `<span id="detail_storage_badge">${getStorageBadgeHtml(product.storageType)}</span>`;
-            }
+            if (storageBadgeEl) storageBadgeEl.outerHTML = `<span id="detail_storage_badge">${getStorageBadgeHtml(product.storageType)}</span>`;
 
             renderDetailImageViewer();
             updateTotalPrice();
@@ -804,11 +687,8 @@
 
         function renderDetailImageViewer() {
             if (!currentSelectedProduct) return;
-            
             let photos = currentSelectedProduct.photos || [];
-            if (photos.length === 0 && currentSelectedProduct.photo) {
-                photos = [currentSelectedProduct.photo];
-            }
+            if (photos.length === 0 && currentSelectedProduct.photo) photos = [currentSelectedProduct.photo];
             
             const imgBox = document.getElementById('detail_img_box');
             const thumbContainer = document.getElementById('detail_thumbnails');
@@ -816,7 +696,7 @@
             if (photos.length > 0 && photos[activePhotoIndex]) {
                 imgBox.innerHTML = `
                     <img src="${photos[activePhotoIndex]}" class="w-full h-full object-contain transition duration-300 hover:scale-105 crisp-image" alt="상품 원본 사진">
-                    <div class="absolute bottom-2 right-2 bg-slate-900/80 text-white text-[10px] font-bold px-2 py-1 rounded-lg backdrop-blur-sm flex items-center space-x-1 shadow">
+                    <div class="absolute bottom-2 right-2 bg-slate-900/80 text-white text-[10px] font-bold px-2 py-1 rounded-lg backdrop-blur-sm shadow">
                         <span>🔍 클릭하여 원본 크게 보기 (${activePhotoIndex + 1}/${photos.length})</span>
                     </div>
                 `;
@@ -847,15 +727,10 @@
         function openPhotoPopup() {
             if (!currentSelectedProduct) return;
             let photos = currentSelectedProduct.photos || [];
-            if (photos.length === 0 && currentSelectedProduct.photo) {
-                photos = [currentSelectedProduct.photo];
-            }
+            if (photos.length === 0 && currentSelectedProduct.photo) photos = [currentSelectedProduct.photo];
             
             let targetUrl = (photos.length > 0 && photos[activePhotoIndex]) ? photos[activePhotoIndex] : null;
-            if (!targetUrl) { 
-                alert('확대할 원본 이미지가 없습니다.'); 
-                return; 
-            }
+            if (!targetUrl) { alert('확대할 원본 이미지가 없습니다.'); return; }
             
             document.getElementById('popup_large_img').src = targetUrl;
             document.getElementById('photo_popup_modal').classList.remove('hidden');
@@ -871,6 +746,7 @@
             document.getElementById('order_quantity').innerText = currentQuantity;
             updateTotalPrice();
         }
+
         function updateTotalPrice() {
             if (!currentSelectedProduct) return;
             const total = currentSelectedProduct.price * currentQuantity;
@@ -882,8 +758,9 @@
             let cart = JSON.parse(localStorage.getItem('store_cart') || '[]');
             let mainPhoto = (currentSelectedProduct.photos && currentSelectedProduct.photos.length > 0) ? currentSelectedProduct.photos[0] : '';
             let existingItem = cart.find(item => item.name === currentSelectedProduct.name);
-            if (existingItem) { existingItem.qty += currentQuantity; } 
-            else {
+            if (existingItem) {
+                existingItem.qty += currentQuantity;
+            } else {
                 cart.push({ name: currentSelectedProduct.name, price: currentSelectedProduct.price, img: currentSelectedProduct.img, photo: mainPhoto, qty: currentQuantity });
             }
             localStorage.setItem('store_cart', JSON.stringify(cart));
@@ -923,7 +800,6 @@
                             <h5 class="font-bold text-slate-800 text-xs truncate">${item.name}</h5>
                             <span class="text-xs text-emerald-600 font-bold">${Number(item.price).toLocaleString()}원</span>
                         </div>
-                        <!-- 장바구니 품목 수량 변경 UI -->
                         <div class="flex items-center space-x-1 bg-white border border-slate-300 rounded-xl px-2 py-1 shadow-sm">
                             <button onclick="updateCartItemQty(${index}, -1)" class="w-6 h-6 text-slate-600 hover:bg-slate-100 rounded-lg font-bold text-xs transition">-</button>
                             <span class="w-6 text-center text-xs font-bold text-slate-800">${item.qty}</span>
@@ -940,17 +816,15 @@
 
         function closeCartModal() { document.getElementById('cart_modal').classList.add('hidden'); }
 
-        // 장바구니 상품 수량 증감 처리 함수
+        /* [개선] 수량 조절 시 모달 실시간 재호출로 금액 반영 */
         function updateCartItemQty(index, amount) {
             let cart = JSON.parse(localStorage.getItem('store_cart') || '[]');
             if (cart[index]) {
                 cart[index].qty += amount;
-                if (cart[index].qty < 1) {
-                    cart[index].qty = 1; // 최소 1개 유지
-                }
+                if (cart[index].qty < 1) cart[index].qty = 1;
                 localStorage.setItem('store_cart', JSON.stringify(cart));
                 updateCartBadge();
-                openCartModal(); // 모달 내부 목록 실시간 갱신
+                openCartModal(); 
             }
         }
 
@@ -964,29 +838,30 @@
 
         function checkoutFromCart() {
             let cart = JSON.parse(localStorage.getItem('store_cart') || '[]');
-            if (cart.length === 0) { 
-                alert('장바구니가 비어 있습니다.'); 
-                return; 
-            }
+            if (cart.length === 0) { alert('장바구니가 비어 있습니다.'); return; }
             let fullProductText = cart.map(item => `${item.name} (${item.qty}개)`).join('\n');
             let totalSum = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
             localStorage.setItem('checkout_cart_data', JSON.stringify(cart));
             location.href = `order.html?full_product=${encodeURIComponent(fullProductText)}&price=${totalSum}`;
         }
 
+        /* [오류 수정] 단품 직접 주문 시 수량 및 금액 독립 처리 */
         function proceedToCheckoutFromDetail() {
             if (!currentSelectedProduct) return;
-            let cart = JSON.parse(localStorage.getItem('store_cart') || '[]');
             let mainPhoto = (currentSelectedProduct.photos && currentSelectedProduct.photos.length > 0) ? currentSelectedProduct.photos[0] : '';
-            let existingItem = cart.find(item => item.name === currentSelectedProduct.name);
-            if (existingItem) { existingItem.qty += currentQuantity; } 
-            else {
-                cart.push({ name: currentSelectedProduct.name, price: currentSelectedProduct.price, img: currentSelectedProduct.img, photo: mainPhoto, qty: currentQuantity });
-            }
-            localStorage.setItem('store_cart', JSON.stringify(cart));
-            let fullProductText = cart.map(item => `${item.name} (${item.qty}개)`).join('\n');
-            let totalSum = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-            localStorage.setItem('checkout_cart_data', JSON.stringify(cart));
+            
+            let directCheckoutCart = [{
+                name: currentSelectedProduct.name,
+                price: currentSelectedProduct.price,
+                img: currentSelectedProduct.img,
+                photo: mainPhoto,
+                qty: currentQuantity
+            }];
+
+            let fullProductText = `${currentSelectedProduct.name} (${currentQuantity}개)`;
+            let totalSum = currentSelectedProduct.price * currentQuantity;
+
+            localStorage.setItem('checkout_cart_data', JSON.stringify(directCheckoutCart));
             location.href = `order.html?full_product=${encodeURIComponent(fullProductText)}&price=${totalSum}`;
         }
 
@@ -1097,11 +972,7 @@
             let users = JSON.parse(localStorage.getItem('store_users') || '[]');
             const found = users.find(u => u.name === name && u.phone === phone);
             resBox.classList.remove('hidden');
-            if (found) {
-                resBox.innerText = `회원님의 아이디는 [ ${found.userId} ] 입니다.`;
-            } else {
-                resBox.innerText = '일치하는 계정이 없습니다.';
-            }
+            resBox.innerText = found ? `회원님의 아이디는 [ ${found.userId} ] 입니다.` : '일치하는 계정이 없습니다.';
         }
 
         function openFindPwModal() { closeLoginModal(); document.getElementById('find_pw_modal').classList.remove('hidden'); }
@@ -1146,6 +1017,8 @@
             }
         }
         function closeCheckPasswordModal() { document.getElementById('check_password_modal').classList.add('hidden'); }
+
+        /* [오류 수정] 비회원 주문 조회 예외처리 보완 */
         function verifyAndOrderOrders() {
             const inputName = document.getElementById('input_check_name').value.trim();
             const inputKey = document.getElementById('input_check_pw').value.trim();
@@ -1155,11 +1028,17 @@
                 return;
             }
 
-            let myOrders = JSON.parse(localStorage.getItem('store_orders') || '[]');
-            const matchedOrder = myOrders.find(order => 
-                order.name === inputName && 
+            let myOrders = [];
+            try {
+                myOrders = JSON.parse(localStorage.getItem('store_orders') || '[]');
+            } catch (e) {
+                myOrders = [];
+            }
+
+            const matchedOrder = Array.isArray(myOrders) ? myOrders.find(order => 
+                order && order.name === inputName && 
                 (order.password === inputKey || order.orderPw === inputKey || order.phone === inputKey)
-            );
+            ) : null;
 
             if (!matchedOrder) { 
                 alert('일치하는 주문 내역이 없거나 정보가 틀렸습니다.'); 
@@ -1167,7 +1046,7 @@
             }
             
             closeCheckPasswordModal();
-            alert(`[조회 성공]\n주문번호: ${matchedOrder.orderId}\n주문상품: ${matchedOrder.product}\n진행상태: ${matchedOrder.status}`);
+            alert(`[조회 성공]\n주문번호: ${matchedOrder.orderId || '미발급'}\n주문상품: ${matchedOrder.product || '상품 정보 없음'}\n진행상태: ${matchedOrder.status || '접수 완료'}`);
         }
     </script>
 </body>
