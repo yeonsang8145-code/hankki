@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval';">
     <title>오늘한끼냉동 - 스토어</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <style>
         body { background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         @media (min-width: 768px) {
@@ -46,7 +48,7 @@
                 <h1 class="text-base font-bold">오늘한끼냉동 스토어</h1>
             </div>
             <div class="flex items-center space-x-2" id="auth_header_area">
-                <!-- 동적 로그인/사용자 상태 영역 -->
+                <!-- 동적 로그인/사용자 및 등급 상태 영역 -->
             </div>
         </div>
     </header>
@@ -62,12 +64,12 @@
             <ul id="main_category_menu" class="flex flex-wrap gap-2 text-xs"></ul>
         </div>
 
-        <!-- 메인 배너 -->
+        <!-- 메인 배너 및 등급 혜택 안내 -->
         <div class="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-2xl p-6 shadow-md flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
                 <span class="text-xs bg-indigo-500/30 text-indigo-300 px-2.5 py-1 rounded-full font-semibold">신선식품 직배송</span>
                 <h2 class="text-xl md:text-2xl font-bold mt-2">오늘 준비한 신선한 냉동식품을 만나보세요!</h2>
-                <p class="text-xs text-slate-300 mt-1">엄격하게 선별된 고품질 먹거리를 집 앞까지 안전하게 보내드립니다.</p>
+                <p class="text-xs text-slate-300 mt-1">구매할수록 더 큰 혜택! (실버 3% / 골드 5% / VIP 10% 자동 할인)</p>
             </div>
         </div>
 
@@ -93,31 +95,31 @@
             <div class="space-y-3 flex-1">
                 <div>
                     <label class="block text-[11px] font-bold text-slate-600 mb-1">아이디</label>
-                    <input type="text" id="signup_id" placeholder="사용할 아이디를 입력하세요" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <input type="text" id="signup_id" maxlength="20" placeholder="사용할 아이디를 입력하세요" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-[11px] font-bold text-slate-600 mb-1">비밀번호</label>
                     <div class="relative flex items-center">
-                        <input type="password" id="signup_pw" placeholder="8~12자리 (영어, 숫자, 특수문자 포함)" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 pr-10 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <input type="password" id="signup_pw" maxlength="12" placeholder="8~12자리 (영어, 숫자, 특수문자 포함)" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 pr-10 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                         <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3 text-slate-400 hover:text-slate-600 text-xs font-bold focus:outline-none">👁️</button>
                     </div>
                 </div>
                 <div>
                     <label class="block text-[11px] font-bold text-slate-600 mb-1">이름</label>
-                    <input type="text" id="signup_name" placeholder="이름을 입력하세요" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <input type="text" id="signup_name" maxlength="20" placeholder="이름을 입력하세요" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-[11px] font-bold text-slate-600 mb-1">주소</label>
-                    <input type="text" id="signup_address" placeholder="기본 주소를 직접 입력해주세요" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 mb-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                    <input type="text" id="signup_detail_address" placeholder="상세 주소를 입력하세요" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <input type="text" id="signup_address" maxlength="100" placeholder="기본 주소를 직접 입력해주세요" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 mb-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <input type="text" id="signup_detail_address" maxlength="100" placeholder="상세 주소를 입력하세요" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-[11px] font-bold text-slate-600 mb-1">연락처</label>
-                    <input type="text" id="signup_phone" placeholder="'-' 없이 숫자만 입력" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <input type="text" id="signup_phone" maxlength="11" placeholder="'-' 없이 숫자만 입력" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-[11px] font-bold text-slate-600 mb-1">이메일주소</label>
-                    <input type="email" id="signup_email" placeholder="example@email.com" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <input type="email" id="signup_email" maxlength="50" placeholder="example@email.com" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 </div>
             </div>
             <div class="flex space-x-2 pt-2 border-t">
@@ -137,11 +139,11 @@
             <div class="space-y-3">
                 <div>
                     <label class="block text-[11px] font-bold text-slate-600 mb-1">아이디</label>
-                    <input type="text" id="login_id" placeholder="아이디를 입력하세요" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <input type="text" id="login_id" maxlength="20" placeholder="아이디를 입력하세요" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-[11px] font-bold text-slate-600 mb-1">비밀번호</label>
-                    <input type="password" id="login_pw" placeholder="비밀번호를 입력하세요" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <input type="password" id="login_pw" maxlength="20" placeholder="비밀번호를 입력하세요" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 </div>
             </div>
             <div class="space-y-2 pt-2">
@@ -157,13 +159,19 @@
         </div>
     </div>
 
-    <!-- 개인정보 수정 모달 -->
+    <!-- 개인정보 수정 모달 및 회원 등급 카드 -->
     <div id="edit_profile_modal" class="fixed inset-0 bg-slate-900/60 z-[999] hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto flex flex-col">
             <div class="flex justify-between items-center border-b pb-3">
-                <h3 class="font-bold text-base text-slate-900">✏️ 개인정보 수정</h3>
+                <h3 class="font-bold text-base text-slate-900">✏️ 개인정보 및 회원 등급</h3>
                 <button onclick="closeEditProfileModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold">✕</button>
             </div>
+            
+            <!-- 회원 등급 카드 UI -->
+            <div id="user_grade_card" class="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 space-y-1">
+                <!-- JS에서 동적 삽입 -->
+            </div>
+
             <div class="space-y-3 flex-1">
                 <div class="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
                     <div>
@@ -177,15 +185,15 @@
                 </div>
                 <div>
                     <label class="block text-[11px] font-bold text-slate-600 mb-1">주소 수정</label>
-                    <input type="text" id="edit_address" placeholder="기본 주소를 입력하세요" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <input type="text" id="edit_address" maxlength="150" placeholder="기본 주소를 입력하세요" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-[11px] font-bold text-slate-600 mb-1">연락처 수정</label>
-                    <input type="text" id="edit_phone" placeholder="'-' 없이 숫자만 입력" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <input type="text" id="edit_phone" maxlength="11" placeholder="'-' 없이 숫자만 입력" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-[11px] font-bold text-slate-600 mb-1">이메일주소 수정</label>
-                    <input type="email" id="edit_email" placeholder="example@email.com" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <input type="email" id="edit_email" maxlength="50" placeholder="example@email.com" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 </div>
             </div>
             <div class="flex space-x-2 pt-2 border-t">
@@ -287,22 +295,10 @@
                 <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4">
                     <p id="detail_desc" class="text-xs md:text-sm text-slate-600 leading-relaxed"></p>
                     <div class="mt-3 pt-3 border-t border-slate-200 flex justify-between items-center">
-                        <span class="text-xs font-bold text-slate-500">판매 가격</span>
-                        <span id="detail_price" class="text-xl font-extrabold text-emerald-600">0원</span>
+                        <span class="text-xs font-bold text-slate-500">판매 정가</span>
+                        <span id="detail_price" class="text-xl font-extrabold text-slate-800">0원</span>
                     </div>
                 </div>
-
-                <!-- 안내 사항 -->
-                <div class="bg-white border border-slate-200 rounded-2xl p-4 space-y-5 text-xs text-slate-700 shadow-sm mt-4">                                        
-                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-3.5 space-y-1.5">                        
-                        <h4 class="font-bold text-amber-900 text-xs flex items-center gap-1.5">                            
-                            <span>⚠️</span> 꼭 읽어주세요!                        
-                        </h4>                        
-                        <p class="leading-relaxed text-amber-950">                            
-                            주말 및 공휴일 택배 수령이 불가능 할 시 냉장·냉동식품의 특성상 제품의 변질을 방지하고자 차주 월요일 일괄발송 하오니 주말 및 공휴일에 택배 수령이 가능하신 분은 꼭 배송메모란에 남겨주시기 바랍니다.                        
-                        </p>                    
-                    </div>                  
-                </div>                
 
                 <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-4">
                     <div class="flex justify-between items-center">
@@ -313,9 +309,21 @@
                             <button onclick="adjustQuantity(1)" class="w-7 h-7 text-slate-600 hover:bg-slate-100 rounded-lg font-bold transition">+</button>
                         </div>
                     </div>
-                    <div class="flex justify-between items-center pt-2 border-t border-slate-200">
-                        <span class="text-xs font-bold text-slate-600">총 상품 금액</span>
-                        <span id="total_price_text" class="text-lg font-extrabold text-slate-900">0원</span>
+
+                    <!-- 회원 등급 할인 계산 레이아웃 -->
+                    <div class="space-y-1.5 pt-2 border-t border-slate-200 text-xs">
+                        <div class="flex justify-between text-slate-500">
+                            <span>총 상품 금액</span>
+                            <span id="total_price_original">0원</span>
+                        </div>
+                        <div class="flex justify-between text-indigo-600 font-bold">
+                            <span>회원 등급 할인 (<span id="detail_user_grade_name">일반</span>)</span>
+                            <span id="total_price_discount">-0원</span>
+                        </div>
+                        <div class="flex justify-between items-center pt-2 border-t border-slate-200 font-extrabold">
+                            <span class="text-xs text-slate-800">최종 결제 예정 금액</span>
+                            <span id="total_price_text" class="text-lg text-emerald-600">0원</span>
+                        </div>
                     </div>
                 </div>
 
@@ -331,7 +339,7 @@
         </div>
     </div>
 
-    <!-- 이미지 원본 팝업 모달 -->
+    <!-- 원본 사진 팝업 모달 -->
     <div id="photo_popup_modal" class="fixed inset-0 bg-black/90 z-[9999] hidden flex items-center justify-center p-4" onclick="closePhotoPopup()">
         <div class="relative max-w-5xl w-full max-h-[95vh] flex flex-col items-center justify-center" onclick="event.stopPropagation()">
             <button onclick="closePhotoPopup()" class="absolute -top-12 right-0 text-white bg-slate-800 hover:bg-slate-700 w-10 h-10 rounded-full font-bold text-lg flex items-center justify-center shadow-lg transition z-10">✕</button>
@@ -360,7 +368,7 @@
         </div>
     </div>
 
-    <!-- 주문 조회 확인 모달 -->
+    <!-- 주문 조회 모달 -->
     <div id="check_password_modal" class="fixed inset-0 bg-slate-900/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-xl">
             <div class="flex justify-between items-center border-b pb-2">
@@ -371,11 +379,11 @@
             <div class="space-y-3">
                 <div>
                     <label class="block text-[11px] font-bold text-slate-600 mb-1">주문자 성함</label>
-                    <input type="text" id="input_check_name" placeholder="예: 홍길동" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <input type="text" id="input_check_name" maxlength="20" placeholder="예: 홍길동" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-[11px] font-bold text-slate-600 mb-1">비밀번호 또는 연락처</label>
-                    <input type="text" id="input_check_pw" placeholder="비밀번호 4자리 또는 휴대폰 번호" class="w-full text-center text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <input type="password" id="input_check_pw" maxlength="11" placeholder="비밀번호 4자리 또는 휴대폰 번호" class="w-full text-center text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 </div>
             </div>
             <div class="flex space-x-2 pt-2">
@@ -386,6 +394,49 @@
     </div>
 
     <script>
+        /* 등급 정책 기준 정의 */
+        const GRADE_POLICY = {
+            BRONZE: { name: '브론즈 🥉', minAmount: 0, discountRate: 0, badgeBg: 'bg-amber-100 text-amber-800' },
+            SILVER: { name: '실버 🥈', minAmount: 100000, discountRate: 0.03, badgeBg: 'bg-slate-200 text-slate-700' },
+            GOLD:   { name: '골드 🥇', minAmount: 300000, discountRate: 0.05, badgeBg: 'bg-yellow-100 text-yellow-800' },
+            VIP:    { name: 'VIP 💎', minAmount: 500000, discountRate: 0.10, badgeBg: 'bg-purple-100 text-purple-800' }
+        };
+
+        function calculateGrade(totalSpent) {
+            const amount = Number(totalSpent) || 0;
+            if (amount >= GRADE_POLICY.VIP.minAmount) return 'VIP';
+            if (amount >= GRADE_POLICY.GOLD.minAmount) return 'GOLD';
+            if (amount >= GRADE_POLICY.SILVER.minAmount) return 'SILVER';
+            return 'BRONZE';
+        }
+
+        function getGradeDiscountInfo(originalPrice, userGradeKey) {
+            const policy = GRADE_POLICY[userGradeKey] || GRADE_POLICY.BRONZE;
+            const discountAmount = Math.floor(originalPrice * policy.discountRate);
+            const finalPrice = originalPrice - discountAmount;
+            return {
+                gradeKey: userGradeKey || 'BRONZE',
+                gradeName: policy.name,
+                discountRatePercent: policy.discountRate * 100,
+                discountAmount: discountAmount,
+                finalPrice: finalPrice
+            };
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function hashPassword(password) {
+            return CryptoJS.SHA256(password).toString();
+        }
+
         const categoryStructure = [
             { name: "전체보기", sub: [] },
             { 
@@ -456,7 +507,7 @@
         window.addEventListener('DOMContentLoaded', () => {
             renderCategoryMenu();
             loadStoreProductsFromFirebase();
-            updateAuthHeader();
+            syncUserDataFromFirebase();
         });
 
         function getStorageBadgeHtml(storageType) {
@@ -470,7 +521,7 @@
         function filterCategory(categoryName) {
             currentSelectedCategory = categoryName;
             const pathDisplay = document.getElementById('current_path_display');
-            if (pathDisplay) pathDisplay.innerText = `선택: ${categoryName}`;
+            if (pathDisplay) pathDisplay.innerText = `선택: ${escapeHtml(categoryName)}`;
             renderFilteredProducts();
         }
 
@@ -509,24 +560,28 @@
             const menuContainer = document.getElementById('main_category_menu');
             let html = '';
             categoryStructure.forEach(cat => {
+                const escapedCatName = escapeHtml(cat.name);
                 if (cat.sub.length === 0) {
-                    html += `<li><button onclick="filterCategory('${cat.name}')" class="px-3 py-2 rounded-xl font-bold transition bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-700">${cat.name}</button></li>`;
+                    html += `<li><button onclick="filterCategory('${escapedCatName}')" class="px-3 py-2 rounded-xl font-bold transition bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-700">${escapedCatName}</button></li>`;
                 } else {
                     let subHtml = '';
                     cat.sub.forEach(subItem => {
                         if (typeof subItem === 'string') {
-                            subHtml += `<li><button onclick="filterCategory('${subItem}'); closeAllSubmenus(event);" class="w-full text-left px-3 py-2 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition">${subItem}</button></li>`;
+                            const escSub = escapeHtml(subItem);
+                            subHtml += `<li><button onclick="filterCategory('${escSub}'); closeAllSubmenus(event);" class="w-full text-left px-3 py-2 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition">${escSub}</button></li>`;
                         } else {
                             let deepSubHtml = '';
+                            const escSubObjName = escapeHtml(subItem.name);
                             if (subItem.sub && subItem.sub.length > 0) {
                                 subItem.sub.forEach(deepItem => {
-                                    deepSubHtml += `<li><button onclick="filterCategory('${deepItem}'); closeAllSubmenus(event);" class="w-full text-left px-3 py-2 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition">${deepItem}</button></li>`;
+                                    const escDeep = escapeHtml(deepItem);
+                                    deepSubHtml += `<li><button onclick="filterCategory('${escDeep}'); closeAllSubmenus(event);" class="w-full text-left px-3 py-2 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition">${escDeep}</button></li>`;
                                 });
                             }
                             subHtml += `
                                 <li class="relative has-sub-submenu">
-                                    <button onclick="toggleSubMenu(event, this); filterCategory('${subItem.name}');" class="w-full text-left px-3 py-2 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition flex justify-between items-center">
-                                        <span>${subItem.name}</span>
+                                    <button onclick="toggleSubMenu(event, this); filterCategory('${escSubObjName}');" class="w-full text-left px-3 py-2 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition flex justify-between items-center">
+                                        <span>${escSubObjName}</span>
                                         ${deepSubHtml ? '<span class="text-[10px] text-slate-400">▶</span>' : ''}
                                     </button>
                                     ${deepSubHtml ? `<ul class="sub-submenu hidden absolute left-full top-0 ml-1 w-44 bg-white border border-slate-200 rounded-xl shadow-lg p-1 space-y-1 z-50">${deepSubHtml}</ul>` : ''}
@@ -536,8 +591,8 @@
                     });
                     html += `
                         <li class="relative has-submenu">
-                            <button onclick="toggleSubMenu(event, this); filterCategory('${cat.name}');" class="px-3 py-2 rounded-xl font-bold transition bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-700 flex items-center gap-1">
-                                ${cat.name} <span class="text-[10px]">▼</span>
+                            <button onclick="toggleSubMenu(event, this); filterCategory('${escapedCatName}');" class="px-3 py-2 rounded-xl font-bold transition bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-700 flex items-center gap-1">
+                                ${escapedCatName} <span class="text-[10px]">▼</span>
                             </button>
                             <ul class="submenu hidden absolute left-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg p-1 space-y-1 z-50">
                                 ${subHtml}
@@ -558,13 +613,13 @@
         }
 
         function loadStoreProductsFromFirebase() {
-            firebase.database().ref('products').on('value', (snapshot) => {
+            db.ref('products').on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
                     allProductsData = Array.isArray(data) ? data : Object.keys(data).map(key => ({ id: key, ...data[key] }));
                 } else {
                     allProductsData = defaultProducts;
-                    firebase.database().ref('products').set(defaultProducts);
+                    db.ref('products').set(defaultProducts);
                 }
                 allProductsData.forEach(p => {
                     if (!p.category) p.category = '냉동식품';
@@ -573,6 +628,33 @@
                     else if (!p.photos) p.photos = [];
                 });
                 renderFilteredProducts();
+            });
+        }
+
+        /* Firebase Realtime Database 실시간 연동 및 동기화 */
+        function syncUserDataFromFirebase() {
+            const currentUser = JSON.parse(localStorage.getItem('store_logged_in_user') || 'null');
+            if (!currentUser || !currentUser.userId) {
+                updateAuthHeader();
+                return;
+            }
+
+            db.ref(`users/${currentUser.userId}`).on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    const totalSpent = Number(data.totalSpent) || 0;
+                    const calculatedGrade = calculateGrade(totalSpent);
+
+                    currentUser.totalSpent = totalSpent;
+                    currentUser.grade = calculatedGrade;
+                    currentUser.name = data.name || currentUser.name;
+                    currentUser.address = data.address || currentUser.address;
+                    currentUser.phone = data.phone || currentUser.phone;
+                    currentUser.email = data.email || currentUser.email;
+
+                    localStorage.setItem('store_logged_in_user', JSON.stringify(currentUser));
+                }
+                updateAuthHeader();
             });
         }
 
@@ -592,8 +674,8 @@
 
             let html = '';
             filtered.forEach((p) => {
-                let mainPhoto = (p.photos && p.photos.length > 0) ? p.photos[0] : null;
-                let imageDisplay = mainPhoto ? `<img src="${mainPhoto}" class="w-full h-full object-cover rounded-2xl crisp-image" alt="상품사진">` : (p.img || '🛍️');
+                let mainPhoto = (p.photos && p.photos.length > 0) ? escapeHtml(p.photos[0]) : null;
+                let imageDisplay = mainPhoto ? `<img src="${mainPhoto}" class="w-full h-full object-cover rounded-2xl crisp-image" alt="상품사진">` : escapeHtml(p.img || '🛍️');
                 let photoBadge = (p.photos && p.photos.length > 1) ? `<span class="text-[9px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-bold ml-1">📷 ${p.photos.length}장</span>` : '';
                 let storageBadge = getStorageBadgeHtml(p.storageType);
 
@@ -603,13 +685,13 @@
                             <div class="w-20 h-20 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0 overflow-hidden shadow-inner relative">${imageDisplay}</div>
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center space-x-1.5 mb-1 flex-wrap gap-y-1">
-                                    <span class="inline-block text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">${p.category || '냉동식품'}</span>
-                                    <span class="inline-block text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-semibold">${p.badge || '신상품'}</span>
+                                    <span class="inline-block text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">${escapeHtml(p.category || '냉동식품')}</span>
+                                    <span class="inline-block text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-semibold">${escapeHtml(p.badge || '신상품')}</span>
                                     ${storageBadge}
                                     ${photoBadge}
                                 </div>
-                                <h4 class="font-bold text-slate-800 text-sm truncate">${p.name}</h4>
-                                <p class="text-xs text-slate-500 mt-0.5 line-clamp-1">${p.desc || ''}</p>
+                                <h4 class="font-bold text-slate-800 text-sm truncate">${escapeHtml(p.name)}</h4>
+                                <p class="text-xs text-slate-500 mt-0.5 line-clamp-1">${escapeHtml(p.desc || '')}</p>
                                 <span class="font-extrabold text-emerald-600 text-sm mt-1.5 inline-block">${Number(p.price).toLocaleString()}원</span>
                             </div>
                         </div>
@@ -620,7 +702,6 @@
                 `;
             });
             grid.innerHTML = html;
-            updateAuthHeader();
             updateCartBadge();
         }
 
@@ -629,10 +710,17 @@
             const authArea = document.getElementById('auth_header_area');
 
             if (currentUser) {
+                const safeName = escapeHtml(currentUser.name);
+                const gradeKey = currentUser.grade || 'BRONZE';
+                const gradeInfo = GRADE_POLICY[gradeKey] || GRADE_POLICY.BRONZE;
+
                 authArea.innerHTML = `
-                    <span class="text-xs text-slate-300 font-bold hidden sm:inline">👤 ${currentUser.name}님</span>
+                    <div class="flex items-center space-x-1.5 bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700">
+                        <span class="text-xs font-bold text-slate-200">${safeName}님</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-md ${gradeInfo.badgeBg}">${gradeInfo.name}</span>
+                    </div>
                     <button onclick="logoutUser()" class="text-xs bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded-xl font-bold transition shadow-sm border border-slate-700">로그아웃</button>
-                    <button onclick="openEditProfileModal()" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl font-bold transition shadow-sm">개인정보 수정</button>
+                    <button onclick="openEditProfileModal()" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl font-bold transition shadow-sm">마이페이지</button>
                     <button onclick="openCartModal()" class="relative text-xs bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded-xl font-bold transition shadow-sm border border-slate-700 flex items-center space-x-1">
                         <span>🛒 장바구니</span>
                         <span id="cart_badge" class="bg-indigo-600 text-white text-[10px] px-1.5 py-0.5 rounded-full hidden">0</span>
@@ -658,7 +746,7 @@
         function openAccumulatedOrderModal() {
             const currentUser = JSON.parse(localStorage.getItem('store_logged_in_user') || 'null');
             if (currentUser) {
-                location.href = `orders.html?name=${encodeURIComponent(currentUser.name)}&phone=${encodeURIComponent(currentUser.phone || '')}&pw=${encodeURIComponent(currentUser.password || '')}`;
+                location.href = `orders.html?name=${encodeURIComponent(currentUser.name)}&phone=${encodeURIComponent(currentUser.phone || '')}`;
             } else {
                 location.href = `orders.html`;
             }
@@ -694,14 +782,15 @@
             const thumbContainer = document.getElementById('detail_thumbnails');
 
             if (photos.length > 0 && photos[activePhotoIndex]) {
+                const safeUrl = escapeHtml(photos[activePhotoIndex]);
                 imgBox.innerHTML = `
-                    <img src="${photos[activePhotoIndex]}" class="w-full h-full object-contain transition duration-300 hover:scale-105 crisp-image" alt="상품 원본 사진">
+                    <img src="${safeUrl}" class="w-full h-full object-contain transition duration-300 hover:scale-105 crisp-image" alt="상품 원본 사진">
                     <div class="absolute bottom-2 right-2 bg-slate-900/80 text-white text-[10px] font-bold px-2 py-1 rounded-lg backdrop-blur-sm shadow">
                         <span>🔍 클릭하여 원본 크게 보기 (${activePhotoIndex + 1}/${photos.length})</span>
                     </div>
                 `;
             } else {
-                imgBox.innerHTML = currentSelectedProduct.img || '🛍️';
+                imgBox.innerHTML = escapeHtml(currentSelectedProduct.img || '🛍️');
             }
 
             if (photos.length > 1) {
@@ -709,10 +798,11 @@
                 thumbContainer.classList.add('flex');
                 let thumbHtml = '';
                 photos.forEach((pUrl, idx) => {
+                    const safeUrl = escapeHtml(pUrl);
                     let borderStyle = (idx === activePhotoIndex) ? 'border-indigo-600 ring-2 ring-indigo-400/60 scale-105 shadow-md' : 'border-slate-200 opacity-70 hover:opacity-100';
                     thumbHtml += `
                         <div onclick="event.stopPropagation(); switchActivePhoto(${idx})" class="w-16 h-16 rounded-xl border-2 overflow-hidden cursor-pointer flex-shrink-0 transition-all ${borderStyle} bg-slate-50 flex items-center justify-center">
-                            <img src="${pUrl}" class="w-full h-full object-cover crisp-image" alt="썸네일 ${idx + 1}">
+                            <img src="${safeUrl}" class="w-full h-full object-cover crisp-image" alt="썸네일 ${idx + 1}">
                         </div>
                     `;
                 });
@@ -747,10 +837,19 @@
             updateTotalPrice();
         }
 
+        /* 수량 변경에 따른 등급 할인가 실시간 업데이트 */
         function updateTotalPrice() {
             if (!currentSelectedProduct) return;
-            const total = currentSelectedProduct.price * currentQuantity;
-            document.getElementById('total_price_text').innerText = Number(total).toLocaleString() + '원';
+            const currentUser = JSON.parse(localStorage.getItem('store_logged_in_user') || 'null');
+            const userGradeKey = currentUser ? (currentUser.grade || 'BRONZE') : 'BRONZE';
+
+            const rawOriginalTotal = currentSelectedProduct.price * currentQuantity;
+            const discountInfo = getGradeDiscountInfo(rawOriginalTotal, userGradeKey);
+
+            document.getElementById('total_price_original').innerText = Number(rawOriginalTotal).toLocaleString() + '원';
+            document.getElementById('detail_user_grade_name').innerText = discountInfo.gradeName;
+            document.getElementById('total_price_discount').innerText = `-${Number(discountInfo.discountAmount).toLocaleString()}원 (${discountInfo.discountRatePercent}%)`;
+            document.getElementById('total_price_text').innerText = Number(discountInfo.finalPrice).toLocaleString() + '원';
         }
 
         function addCurrentProductToCart() {
@@ -788,16 +887,20 @@
                 document.getElementById('cart_modal').classList.remove('hidden');
                 return;
             }
+
+            const currentUser = JSON.parse(localStorage.getItem('store_logged_in_user') || 'null');
+            const userGradeKey = currentUser ? (currentUser.grade || 'BRONZE') : 'BRONZE';
+
             let html = '', totalSum = 0;
             cart.forEach((item, index) => {
                 let itemTotal = item.price * item.qty;
                 totalSum += itemTotal;
-                let imageDisplay = item.photo ? `<img src="${item.photo}" class="w-full h-full object-cover rounded-xl crisp-image" alt="상품">` : (item.img || '🛍️');
+                let imageDisplay = item.photo ? `<img src="${escapeHtml(item.photo)}" class="w-full h-full object-cover rounded-xl crisp-image" alt="상품">` : escapeHtml(item.img || '🛍️');
                 html += `
                     <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex items-center justify-between gap-3">
                         <div class="w-14 h-14 bg-white border rounded-xl flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden">${imageDisplay}</div>
                         <div class="flex-1 min-w-0">
-                            <h5 class="font-bold text-slate-800 text-xs truncate">${item.name}</h5>
+                            <h5 class="font-bold text-slate-800 text-xs truncate">${escapeHtml(item.name)}</h5>
                             <span class="text-xs text-emerald-600 font-bold">${Number(item.price).toLocaleString()}원</span>
                         </div>
                         <div class="flex items-center space-x-1 bg-white border border-slate-300 rounded-xl px-2 py-1 shadow-sm">
@@ -810,13 +913,14 @@
                 `;
             });
             content.innerHTML = html;
-            document.getElementById('cart_total_price').innerText = Number(totalSum).toLocaleString() + '원';
+
+            const discountInfo = getGradeDiscountInfo(totalSum, userGradeKey);
+            document.getElementById('cart_total_price').innerText = Number(discountInfo.finalPrice).toLocaleString() + '원';
             document.getElementById('cart_modal').classList.remove('hidden');
         }
 
         function closeCartModal() { document.getElementById('cart_modal').classList.add('hidden'); }
 
-        /* [개선] 수량 조절 시 모달 실시간 재호출로 금액 반영 */
         function updateCartItemQty(index, amount) {
             let cart = JSON.parse(localStorage.getItem('store_cart') || '[]');
             if (cart[index]) {
@@ -839,15 +943,24 @@
         function checkoutFromCart() {
             let cart = JSON.parse(localStorage.getItem('store_cart') || '[]');
             if (cart.length === 0) { alert('장바구니가 비어 있습니다.'); return; }
+            
+            const currentUser = JSON.parse(localStorage.getItem('store_logged_in_user') || 'null');
+            const userGradeKey = currentUser ? (currentUser.grade || 'BRONZE') : 'BRONZE';
+
             let fullProductText = cart.map(item => `${item.name} (${item.qty}개)`).join('\n');
             let totalSum = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            
+            const discountInfo = getGradeDiscountInfo(totalSum, userGradeKey);
+
             localStorage.setItem('checkout_cart_data', JSON.stringify(cart));
-            location.href = `order.html?full_product=${encodeURIComponent(fullProductText)}&price=${totalSum}`;
+            location.href = `order.html?full_product=${encodeURIComponent(fullProductText)}&price=${discountInfo.finalPrice}&original_price=${totalSum}&discount_amount=${discountInfo.discountAmount}`;
         }
 
-        /* [오류 수정] 단품 직접 주문 시 수량 및 금액 독립 처리 */
         function proceedToCheckoutFromDetail() {
             if (!currentSelectedProduct) return;
+            const currentUser = JSON.parse(localStorage.getItem('store_logged_in_user') || 'null');
+            const userGradeKey = currentUser ? (currentUser.grade || 'BRONZE') : 'BRONZE';
+
             let mainPhoto = (currentSelectedProduct.photos && currentSelectedProduct.photos.length > 0) ? currentSelectedProduct.photos[0] : '';
             
             let directCheckoutCart = [{
@@ -859,10 +972,11 @@
             }];
 
             let fullProductText = `${currentSelectedProduct.name} (${currentQuantity}개)`;
-            let totalSum = currentSelectedProduct.price * currentQuantity;
+            let rawTotal = currentSelectedProduct.price * currentQuantity;
+            const discountInfo = getGradeDiscountInfo(rawTotal, userGradeKey);
 
             localStorage.setItem('checkout_cart_data', JSON.stringify(directCheckoutCart));
-            location.href = `order.html?full_product=${encodeURIComponent(fullProductText)}&price=${totalSum}`;
+            location.href = `order.html?full_product=${encodeURIComponent(fullProductText)}&price=${discountInfo.finalPrice}&original_price=${rawTotal}&discount_amount=${discountInfo.discountAmount}`;
         }
 
         function openSignupModal() { document.getElementById('signup_modal').classList.remove('hidden'); }
@@ -875,17 +989,41 @@
             pwInput.type = pwInput.type === 'password' ? 'text' : 'password';
         }
 
+        /* 로그인 처리 (Firebase 실시간 DB 연동) */
         function submitLogin() {
             const id = document.getElementById('login_id').value.trim();
             const pw = document.getElementById('login_pw').value.trim();
             if (!id || !pw) { alert('아이디와 비밀번호를 모두 입력해주세요.'); return; }
-            let users = JSON.parse(localStorage.getItem('store_users') || '[]');
-            const foundUser = users.find(u => u.userId === id && u.password === pw);
-            if (!foundUser) { alert('아이디 또는 비밀번호가 일치하지 않습니다.'); return; }
-            localStorage.setItem('store_logged_in_user', JSON.stringify(foundUser));
-            alert(`${foundUser.name}님 환영합니다! 로그인되었습니다.`);
-            closeLoginModal();
-            updateAuthHeader();
+            
+            const hashedPw = hashPassword(pw);
+
+            db.ref(`users/${id}`).once('value').then((snapshot) => {
+                const userData = snapshot.val();
+                if (userData && userData.password === hashedPw) {
+                    const totalSpent = Number(userData.totalSpent) || 0;
+                    const userGrade = calculateGrade(totalSpent);
+
+                    const sessionUser = {
+                        userId: id,
+                        name: userData.name,
+                        phone: userData.phone,
+                        address: userData.address,
+                        email: userData.email,
+                        totalSpent: totalSpent,
+                        grade: userGrade
+                    };
+
+                    localStorage.setItem('store_logged_in_user', JSON.stringify(sessionUser));
+                    alert(`${userData.name}님 환영합니다! 로그인되었습니다.`);
+                    closeLoginModal();
+                    syncUserDataFromFirebase();
+                } else {
+                    alert('아이디 또는 비밀번호가 일치하지 않습니다.');
+                }
+            }).catch((error) => {
+                console.error("Login Error:", error);
+                alert("로그인 처리 중 오류가 발생했습니다.");
+            });
         }
 
         function logoutUser() {
@@ -894,6 +1032,7 @@
             updateAuthHeader();
         }
 
+        /* 회원가입 처리 (Firebase 실시간 DB 저장) */
         function submitSignup() {
             const userId = document.getElementById('signup_id').value.trim();
             const password = document.getElementById('signup_pw').value.trim();
@@ -903,38 +1042,84 @@
             const phone = document.getElementById('signup_phone').value.trim();
             const email = document.getElementById('signup_email').value.trim();
 
-            if (!userId) { alert('아이디를 입력해주세요.'); return; }
+            const idRegex = /^[a-zA-Z0-9_]{4,20}$/;
+            if (!idRegex.test(userId)) { alert('아이디는 4~20자리의 영문, 숫자, 언더바(_)만 가능합니다.'); return; }
+
             const pwRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,12}$/;
             if (!password || !pwRegex.test(password)) {
                 alert('비밀번호는 8~12자리의 영문, 숫자, 특수문자를 모두 포함해야 합니다.');
                 return;
             }
-            if (!name || !addressBase || !phone || !email) { alert('필수 회원정보를 모두 입력해주세요.'); return; }
+
+            const phoneRegex = /^01[016789]\d{7,8}$/;
+            if (!phoneRegex.test(phone)) { alert('올바른 휴대폰 번호를 입력해 주세요. (숫자만 10~11자리)'); return; }
+
+            if (!name || !addressBase || !email) { alert('필수 회원정보를 모두 입력해주세요.'); return; }
 
             const fullAddress = `${addressBase} ${addressDetail}`.trim();
-            let users = JSON.parse(localStorage.getItem('store_users') || '[]');
-            if (users.some(u => u.userId === userId)) { alert('이미 존재하는 아이디입니다.'); return; }
+            const hashedPw = hashPassword(password);
 
-            const newUser = { userId, password, name, address: fullAddress, phone, email };
-            users.push(newUser);
-            localStorage.setItem('store_users', JSON.stringify(users));
-            localStorage.setItem('store_logged_in_user', JSON.stringify(newUser));
+            db.ref(`users/${userId}`).once('value').then((snapshot) => {
+                if (snapshot.exists()) {
+                    alert('이미 존재하는 아이디입니다.');
+                    return;
+                }
 
-            alert('회원가입 및 자동 로그인이 완료되었습니다!');
-            closeSignupModal();
-            updateAuthHeader();
+                const newUser = {
+                    userId: userId,
+                    password: hashedPw,
+                    name: name,
+                    address: fullAddress,
+                    phone: phone,
+                    email: email,
+                    totalSpent: 0,
+                    grade: 'BRONZE'
+                };
+
+                return db.ref(`users/${userId}`).set(newUser).then(() => {
+                    const sessionUser = { userId, name, address: fullAddress, phone, email, totalSpent: 0, grade: 'BRONZE' };
+                    localStorage.setItem('store_logged_in_user', JSON.stringify(sessionUser));
+
+                    alert('회원가입 및 자동 로그인이 완료되었습니다!');
+                    closeSignupModal();
+                    syncUserDataFromFirebase();
+                });
+            }).catch((error) => {
+                console.error("Signup Error:", error);
+                alert("회원가입 중 오류가 발생했습니다.");
+            });
         }
 
+        /* 마이페이지 내 등급 카드 렌더링 */
         function openEditProfileModal() {
             const currentUser = JSON.parse(localStorage.getItem('store_logged_in_user') || 'null');
             if (!currentUser) { alert('로그인 후 이용 가능합니다.'); openLoginModal(); return; }
+
             document.getElementById('edit_user_id').value = currentUser.userId || '';
             document.getElementById('edit_user_name').value = currentUser.name || ''; 
             document.getElementById('edit_address').value = currentUser.address || '';
             document.getElementById('edit_phone').value = currentUser.phone || '';
             document.getElementById('edit_email').value = currentUser.email || '';
+
+            const currentGradeKey = currentUser.grade || calculateGrade(currentUser.totalSpent || 0);
+            const gradeInfo = GRADE_POLICY[currentGradeKey] || GRADE_POLICY.BRONZE;
+            const totalSpent = Number(currentUser.totalSpent) || 0;
+
+            const gradeCard = document.getElementById('user_grade_card');
+            gradeCard.innerHTML = `
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-xs font-bold text-indigo-900">내 회원 등급</span>
+                    <span class="text-xs font-extrabold px-2.5 py-1 rounded-lg ${gradeInfo.badgeBg}">${gradeInfo.name}</span>
+                </div>
+                <div class="text-xs text-slate-600 space-y-1">
+                    <p>• 누적 결제금액: <strong class="text-indigo-600">${totalSpent.toLocaleString()}원</strong></p>
+                    <p>• 등급 혜택: <strong>모든 상품 ${gradeInfo.discountRate * 100}% 추가 할인</strong></p>
+                </div>
+            `;
+
             document.getElementById('edit_profile_modal').classList.remove('hidden');
         }
+
         function closeEditProfileModal() { document.getElementById('edit_profile_modal').classList.add('hidden'); }
 
         function submitEditProfile() {
@@ -943,67 +1128,91 @@
             const newAddress = document.getElementById('edit_address').value.trim();
             const newPhone = document.getElementById('edit_phone').value.trim();
             const newEmail = document.getElementById('edit_email').value.trim();
-            if (!newAddress || !newPhone || !newEmail) { alert('수정 항목을 모두 입력해주세요.'); return; }
+            
+            const phoneRegex = /^01[016789]\d{7,8}$/;
+            if (!phoneRegex.test(newPhone)) { alert('올바른 휴대폰 번호를 입력해 주세요.'); return; }
+            if (!newAddress || !newEmail) { alert('수정 항목을 모두 입력해주세요.'); return; }
 
-            let users = JSON.parse(localStorage.getItem('store_users') || '[]');
-            let userIndex = users.findIndex(u => u.userId === currentUser.userId);
-            if (userIndex !== -1) {
-                users[userIndex].address = newAddress;
-                users[userIndex].phone = newPhone;
-                users[userIndex].email = newEmail;
-                localStorage.setItem('store_users', JSON.stringify(users));
-            }
-            currentUser.address = newAddress;
-            currentUser.phone = newPhone;
-            currentUser.email = newEmail;
-            localStorage.setItem('store_logged_in_user', JSON.stringify(currentUser));
-            alert('개인정보가 수정되었습니다.');
-            closeEditProfileModal();
-            updateAuthHeader();
+            db.ref(`users/${currentUser.userId}`).update({
+                address: newAddress,
+                phone: newPhone,
+                email: newEmail
+            }).then(() => {
+                currentUser.address = newAddress;
+                currentUser.phone = newPhone;
+                currentUser.email = newEmail;
+                localStorage.setItem('store_logged_in_user', JSON.stringify(currentUser));
+
+                alert('개인정보가 수정되었습니다.');
+                closeEditProfileModal();
+                updateAuthHeader();
+            }).catch((error) => {
+                console.error("Profile Update Error:", error);
+                alert("수정 실패했습니다.");
+            });
         }
 
         function openFindIdModal() { closeLoginModal(); document.getElementById('find_id_modal').classList.remove('hidden'); }
         function closeFindIdModal() { document.getElementById('find_id_modal').classList.add('hidden'); }
+        
         function executeFindId() {
             const name = document.getElementById('find_id_name').value.trim();
             const phone = document.getElementById('find_id_phone').value.trim();
             const resBox = document.getElementById('find_id_result');
             if (!name || !phone) { alert('이름과 연락처를 입력해주세요.'); return; }
-            let users = JSON.parse(localStorage.getItem('store_users') || '[]');
-            const found = users.find(u => u.name === name && u.phone === phone);
-            resBox.classList.remove('hidden');
-            resBox.innerText = found ? `회원님의 아이디는 [ ${found.userId} ] 입니다.` : '일치하는 계정이 없습니다.';
+
+            db.ref('users').once('value').then((snapshot) => {
+                const users = snapshot.val() || {};
+                let foundUserId = null;
+                Object.keys(users).forEach(key => {
+                    if (users[key].name === name && users[key].phone === phone) {
+                        foundUserId = users[key].userId;
+                    }
+                });
+
+                resBox.classList.remove('hidden');
+                resBox.innerText = foundUserId ? `회원님의 아이디는 [ ${escapeHtml(foundUserId)} ] 입니다.` : '일치하는 계정이 없습니다.';
+            });
         }
 
         function openFindPwModal() { closeLoginModal(); document.getElementById('find_pw_modal').classList.remove('hidden'); }
         function closeFindPwModal() { document.getElementById('find_pw_modal').classList.add('hidden'); }
+        
         function executeFindPw() {
             const id = document.getElementById('find_pw_id').value.trim();
             const phone = document.getElementById('find_pw_phone').value.trim();
             const resBox = document.getElementById('find_pw_result');
-            let users = JSON.parse(localStorage.getItem('store_users') || '[]');
+
             if (!verifiedResetUser) {
-                const found = users.find(u => u.userId === id && u.phone === phone);
-                resBox.classList.remove('hidden');
-                if (found) {
-                    verifiedResetUser = found.userId;
-                    resBox.innerText = '본인 확인 완료. 새 비밀번호를 입력하세요.';
-                    document.getElementById('new_pw_container').classList.remove('hidden');
-                    document.getElementById('find_pw_btn').innerText = '변경 완료';
-                } else {
-                    resBox.innerText = '일치하는 정보가 없습니다.';
-                }
+                db.ref(`users/${id}`).once('value').then((snapshot) => {
+                    const userData = snapshot.val();
+                    resBox.classList.remove('hidden');
+                    if (userData && userData.phone === phone) {
+                        verifiedResetUser = id;
+                        resBox.innerText = '본인 확인 완료. 새 비밀번호를 입력하세요.';
+                        document.getElementById('new_pw_container').classList.remove('hidden');
+                        document.getElementById('find_pw_btn').innerText = '변경 완료';
+                    } else {
+                        resBox.innerText = '일치하는 정보가 없습니다.';
+                    }
+                });
                 return;
             }
+
             const newPw = document.getElementById('find_pw_new').value.trim();
-            let userIndex = users.findIndex(u => u.userId === verifiedResetUser);
-            if (userIndex !== -1) {
-                users[userIndex].password = newPw;
-                localStorage.setItem('store_users', JSON.stringify(users));
-                alert('비밀번호가 변경되었습니다.');
+            const pwRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,12}$/;
+            if (!pwRegex.test(newPw)) {
+                alert('새 비밀번호는 8~12자리의 영문, 숫자, 특수문자를 모두 포함해야 합니다.');
+                return;
+            }
+
+            db.ref(`users/${verifiedResetUser}`).update({
+                password: hashPassword(newPw)
+            }).then(() => {
+                alert('비밀번호가 안전하게 변경되었습니다.');
                 closeFindPwModal();
                 openLoginModal();
-            }
+            });
         }
 
         function openCheckMyOrderModal() {
@@ -1018,7 +1227,6 @@
         }
         function closeCheckPasswordModal() { document.getElementById('check_password_modal').classList.add('hidden'); }
 
-        /* [오류 수정] 비회원 주문 조회 예외처리 보완 */
         function verifyAndOrderOrders() {
             const inputName = document.getElementById('input_check_name').value.trim();
             const inputKey = document.getElementById('input_check_pw').value.trim();
@@ -1035,9 +1243,10 @@
                 myOrders = [];
             }
 
+            const inputHash = hashPassword(inputKey);
             const matchedOrder = Array.isArray(myOrders) ? myOrders.find(order => 
                 order && order.name === inputName && 
-                (order.password === inputKey || order.orderPw === inputKey || order.phone === inputKey)
+                (order.password === inputHash || order.orderPw === inputKey || order.phone === inputKey)
             ) : null;
 
             if (!matchedOrder) { 
@@ -1046,7 +1255,7 @@
             }
             
             closeCheckPasswordModal();
-            alert(`[조회 성공]\n주문번호: ${matchedOrder.orderId || '미발급'}\n주문상품: ${matchedOrder.product || '상품 정보 없음'}\n진행상태: ${matchedOrder.status || '접수 완료'}`);
+            alert(`[조회 성공]\n주문번호: ${escapeHtml(matchedOrder.orderId || '미발급')}\n주문상품: ${escapeHtml(matchedOrder.product || '상품 정보 없음')}\n진행상태: ${escapeHtml(matchedOrder.status || '접수 완료')}`);
         }
     </script>
 </body>
