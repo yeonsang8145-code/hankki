@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>구매 누적 이력 - 오늘한끼냉동</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDK 연동 -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+    <div class="max-w-md mx-auto p-4 min-h-screen flex flex-col justify-between">
+        <div>
+            <!-- 상단 헤더 -->
+            <header class="mb-6 text-center pt-4">
+                <h1 class="text-xl font-bold text-gray-900">📦 나의 누적 구매 이력</h1>
+                <p id="sub-title" class="text-sm text-gray-500 mt-1">고객님의 전체 주문 및 입금 내역입니다.</p>
+            </header>
+
+            <!-- 검색/인증 영역 (파라미터가 없을 경우 수동 조회) -->
+            <div id="search-box" class="bg-white p-4 rounded-xl shadow-sm mb-4 hidden">
+                <label class="block text-xs font-bold text-gray-700 mb-1">주문자 성함</label>
+                <input type="text" id="input-name" class="w-full p-2 border border-gray-200 rounded-lg text-sm mb-3" placeholder="이름을 입력하세요">
+                <label class="block text-xs font-bold text-gray-700 mb-1">전화번호 뒷자리 또는 비밀번호 4자리</label>
+                <input type="text" id="input-phone" class="w-full p-2 border border-gray-200 rounded-lg text-sm mb-3" placeholder="연락처 또는 비밀번호를 입력하세요">
+                <button onclick="searchOrdersManual()" class="w-full bg-emerald-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700 transition">
+                    조회하기
+                </button>
+            </div>
+
+            <!-- 주문 리스트 출력 컨테이너 -->
+            <div id="order-history-container" class="space-y-4">
+                <div class="text-center text-gray-400 py-8 text-sm">주문 정보를 불러오는 중입니다...</div>
+            </div>
+        </div>
+
+        <!-- 하단 버튼 -->
+        <div class="mt-8 pb-4">
+            <button onclick="location.href='index.html'" class="w-full bg-emerald-600 text-white py-3 rounded-lg font-semibold hover:bg-emerald-700 transition shadow-sm">
+                계속 쇼핑하기
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Firebase 설정 정보
+        const firebaseConfig = {
+            apiKey: "AIzaSyApTZXjW03-8Z2AMh8uOksT7LzM-hwX39I",
+            authDomain: "oneul-hankki.firebaseapp.com",
+            databaseURL: "https://oneul-hankki-default-rtdb.firebaseio.com",
+            projectId: "oneul-hankki",
+            storageBucket: "oneul-hankki.firebasestorage.app",
+            messagingSenderId: "512249280108",
+            appId: "1:512249280108:web:8ba0d79e819c7ec43c0a49"
+        };
+
+        let db = null;
+        let auth = null;
+        let currentAuthUser = null;
+        try {
+            if (typeof firebase !== 'undefined') {
+                if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+                db = firebase.database();
+                auth = firebase.auth();
+            }
+        } catch (e) {
+            console.warn("Firebase 연결 실패:", e);
+        }
+
+        document.addEventListener("DOMContentLoaded", async function() {
+            await ensureAnonymousAuth();
+            loadAndRenderOrders();
+        });
+
+        async function ensureAnonymousAuth() {
+            if (!auth) return null;
+            try {
+                if (auth.currentUser) { currentAuthUser = auth.currentUser; return currentAuthUser; }
+                const result = await auth.signInAnonymously();
+                currentAuthUser = result.user;
+                return currentAuthUser;
+            } catch (e) {
+                console.error('익명 인증 실패:', e);
+                return null;
+            }
+        }
+
+        async function loadAndRenderOrders() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const searchName = urlParams.get('name');
+            const searchPhone = urlParams.get('phone');
+            const container = document.getElementById('order-history-container');
+            const searchBox = document.getElementById('search-box');
+            const subTitle = document.getElementById('sub-title');
+
+            // URL에는 비밀번호를 받지 않습니다. 기존 pw 파라미터도 무시합니다.
+            if (!searchName) {
+                if (searchBox) searchBox.classList.remove('hidden');
+                if (subTitle) subTitle.innerText = '주문 조회를 위해 이름과 연락처를 입력해 주세요.';
+                container.innerHTML = `<div class="text-center text-gray-400 py-8 text-sm">정보를 입력하고 조회 버튼을 눌러주세요.</div>`;
+                return;
+            }
+
+            if (subTitle) subTitle.innerText = `${searchName} 님의 주문 내역입니다.`;
+
+            // Firebase Rules는 ownerUid 기준의 제한된 조회만 허용합니다.
+            // 따라서 현재 브라우저에서 만든 익명 계정의 주문만 원격 조회됩니다.
+            if (db && currentAuthUser) {
+                try {
+                    const snapshot = await db.ref('store_orders')
+                        .orderByChild('ownerUid')
+                        .equalTo(currentAuthUser.uid)
+                        .once('value');
+                    const data = snapshot.val();
+                    let allOrders = data ? Object.keys(data).map(key => ({ firebaseKey: key, ...data[key] })) : [];
+                    filterAndDisplayOrders(allOrders, searchName, searchPhone);
+                    return;
+                } catch (e) {
+                    console.warn('Firebase 주문 조회 실패:', e);
+                }
+            }
+
+            fallbackLocalOrders(searchName, searchPhone);
+        }
+
+        function fallbackLocalOrders(searchName, searchPhone) {
+            const allOrders = JSON.parse(localStorage.getItem('store_orders')) || [];
+            filterAndDisplayOrders(allOrders, searchName, searchPhone);
+        }
+
+        function filterAndDisplayOrders(allOrders, searchName, searchPhone) {
+            const container = document.getElementById('order-history-container');
+
+            const userOrders = allOrders.filter(order => {
+                if (!order) return false;
+                const orderName = String(order.name || '').trim();
+                const targetName = String(searchName).trim();
+                const cleanOrderPhone = String(order.phone || '').replace(/-/g, '');
+                const cleanSearchPhone = String(searchPhone || '').replace(/-/g, '');
+                if (orderName !== targetName) return false;
+                if (cleanSearchPhone) return cleanOrderPhone.includes(cleanSearchPhone);
+                return true;
+            });
+
+            if (userOrders.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white p-6 rounded-xl shadow-sm text-center border border-gray-100">
+                        <p class="text-gray-500 text-sm">조회된 구매 이력이 없습니다.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let htmlContent = '';
+            userOrders.forEach((order) => {
+                let statusClass = 'bg-amber-50 text-amber-700';
+                if (order.status === '입금완료') statusClass = 'bg-emerald-50 text-emerald-700';
+                else if (order.status === '배송준비') statusClass = 'bg-blue-50 text-blue-700';
+                else if (order.status === '배송중') statusClass = 'bg-red-50 text-red-700';
+                else if (order.status === '배송완료') statusClass = 'bg-slate-100 text-slate-700';
+
+                htmlContent += `
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-2">
+                        <div class="flex justify-between items-center mb-1 pb-2 border-b border-slate-100">
+                            <span class="text-xs font-bold text-indigo-600">주문번호: ${order.orderId || '미발급'}</span>
+                            <span class="text-xs text-slate-400">${order.date || ''}</span>
+                        </div>
+                        <div class="text-sm space-y-1">
+                            <p><span class="text-slate-400 text-xs">주문 상품:</span> <span class="font-bold text-slate-800">${order.product || '상품 정보 없음'}</span></p>
+                            <p><span class="text-slate-400 text-xs">결제 금액:</span> <span class="font-bold text-emerald-600">${Number(order.price || 0).toLocaleString()}원</span></p>
+                            <p><span class="text-slate-400 text-xs">입금자명:</span> <span class="text-slate-700 font-semibold">${order.depositor || order.name}</span></p>
+                        </div>
+                        <div class="flex justify-between items-center pt-2 border-t border-slate-100 text-xs">
+                            <span class="text-slate-400">연락처: ${order.phone || '미기재'}</span>
+                            <span class="px-2.5 py-1 rounded-full font-bold ${statusClass}">
+                                ${order.status || '입금대기'}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = htmlContent;
+        }
+
+        function searchOrdersManual() {
+            const name = document.getElementById('input-name').value.trim();
+            const phone = document.getElementById('input-phone').value.trim();
+
+            if (!name) {
+                alert('성함을 입력해주세요.');
+                return;
+            }
+
+            window.location.href = `orders.html?name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}`;
+        }
+    </script>
+</body>
+</html>

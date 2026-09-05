@@ -1,0 +1,34 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "products": {
+      ".read": true,
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() == true"
+    },
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid",
+        ".validate": "newData.hasChildren(['userId','name','address','phone','email']) && newData.child('userId').isString() && newData.child('userId').val().length > 0 && newData.child('userId').val().length <= 50 && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 50 && newData.child('address').isString() && newData.child('address').val().length <= 200 && newData.child('phone').isString() && newData.child('phone').val().length >= 9 && newData.child('phone').val().length <= 20 && newData.child('email').isString() && newData.child('email').val() == auth.token.email"
+      }
+    },
+    "admins": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid && data.val() == true",
+        ".write": false,
+        ".validate": "newData.isBoolean()"
+      }
+    },
+    "store_orders": {
+      ".indexOn": [
+        "ownerUid"
+      ],
+      ".read": "auth != null && (root.child('admins').child(auth.uid).val() == true || (query.orderByChild == 'ownerUid' && query.equalTo == auth.uid))",
+      "$orderId": {
+        ".write": "(auth != null && root.child('admins').child(auth.uid).val() == true) || (!data.exists() && ((auth != null && newData.child('ownerUid').val() == auth.uid) || (auth == null && newData.child('ownerUid').val() == 'guest')))",
+        ".validate": "newData.hasChildren(['orderId','name','phone','address','product','price','date','status','ownerUid']) && newData.child('orderId').isString() && newData.child('orderId').val().matches(/^ORD-[0-9]{6}$/) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 50 && newData.child('phone').isString() && newData.child('phone').val().length >= 9 && newData.child('phone').val().length <= 20 && newData.child('address').isString() && newData.child('address').val().length > 0 && newData.child('address').val().length <= 200 && newData.child('product').isString() && newData.child('product').val().length > 0 && newData.child('product').val().length <= 2000 && newData.child('price').isNumber() && newData.child('price').val() >= 0 && newData.child('price').val() <= 100000000 && newData.child('date').isString() && newData.child('date').val().length <= 30 && newData.child('status').isString() && (newData.child('status').val() == '입금대기' || newData.child('status').val() == '입금완료' || newData.child('status').val() == '배송준비' || newData.child('status').val() == '배송중' || newData.child('status').val() == '배송완료') && newData.child('ownerUid').isString() && ((!data.exists() && ((auth != null && newData.child('ownerUid').val() == auth.uid) || (auth == null && newData.child('ownerUid').val() == 'guest'))) || (data.exists() && newData.child('ownerUid').val() == data.child('ownerUid').val()))"
+      }
+    }
+  }
+}
