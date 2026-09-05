@@ -112,7 +112,7 @@
                 <div>
                     <label class="block text-[11px] font-bold text-slate-600 mb-1">비밀번호</label>
                     <div class="relative flex items-center">
-                        <input type="password" id="signup_pw" placeholder="8~12자리 (영어, 숫자, 특수문자 포함)" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 pr-10 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <input type="password" id="signup_pw" maxlength="12" placeholder="8~12자리 (영문, 숫자, 특수문자 포함)" class="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl p-3 pr-10 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                         <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3 text-slate-400 hover:text-slate-600 text-xs font-bold focus:outline-none">👁️</button>
                     </div>
                 </div>
@@ -1050,7 +1050,7 @@
             // 8~12자리, 영문 1개 이상 + 숫자 1개 이상 + 영문/숫자가 아닌 특수문자 1개 이상
             // 특정 특수문자(@$!%*#?&)만 허용하면 사용자가 입력한 다른 정상적인 특수문자가 거부될 수 있으므로
             // 모든 일반 특수문자를 허용합니다. (공백은 제외)
-            const pwRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9\s])[A-Za-z0-9!@#$%^&*()_+\-=\[\]{};':\\|,.<>/?`~\"\\]{8,12}$/;
+            const pwRegex = /^(?=[\x21-\x7E]{8,12}$)(?=.*[A-Za-z])(?=.*[0-9])(?=.*[^A-Za-z0-9\s])[\x21-\x7E]{8,12}$/;
             if (!pwRegex.test(password)) {
                 alert('비밀번호는 8~12자리이며 영문, 숫자, 특수문자를 각각 1개 이상 포함해야 합니다. 공백은 사용할 수 없습니다.');
                 return;
