@@ -3,6 +3,7 @@
 <head>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>상품 주문서 (무통장 입금)</title>
@@ -70,11 +71,6 @@
                     <label class="block text-xs font-semibold text-slate-600 mb-1">배송 메모</label>
                     <input type="text" id="memo" placeholder="부재시 문 앞에 놓아주세요" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">주문 조회 비밀번호 4자리 <span class="text-red-500">*</span></label>
-                    <input type="password" id="order_password" required maxlength="4" placeholder="숫자 4자리 입력" class="w-full text-center tracking-widest text-base bg-slate-50 border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                </div>
             </div>
 
             <div class="bg-indigo-50 rounded-xl p-4 flex justify-between items-center mt-4">
@@ -112,10 +108,13 @@
         };
         
         let db = null;
+        let auth = null;
+        let currentAuthUser = null;
         try {
             if (typeof firebase !== 'undefined') {
                 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
                 db = firebase.database();
+                auth = firebase.auth();
             }
         } catch (e) {}
 
@@ -124,31 +123,71 @@
         let shippingFee = 3000;
         let finalTotalPrice = 0;
 
-        window.addEventListener('DOMContentLoaded', () => {
-            loadCartData();
-            autofillUserInfo();
+        window.addEventListener('DOMContentLoaded', async () => {
+            await resolveAuthState();
+            await loadCartData();
+            await autofillUserInfo();
         });
 
-        function autofillUserInfo() {
+        async function resolveAuthState() {
+            // 회원은 로그인 상태를 유지하고, 비회원은 그대로 주문 페이지를 이용합니다.
+            if (!auth) {
+                currentAuthUser = null;
+                return null;
+            }
             try {
-                const loggedUser = JSON.parse(localStorage.getItem('store_logged_in_user') || 'null');
-                if (loggedUser) {
-                    if (loggedUser.name) document.getElementById('buyer_name').value = loggedUser.name;
-                    if (loggedUser.phone) document.getElementById('buyer_phone').value = loggedUser.phone;
-                    if (loggedUser.address) document.getElementById('shipping_address').value = loggedUser.address;
-                }
-            } catch (e) {}
+                currentAuthUser = await new Promise(resolve => {
+                    let settled = false;
+                    const unsubscribe = auth.onAuthStateChanged(user => {
+                        if (!settled) {
+                            settled = true;
+                            try { unsubscribe(); } catch (e) {}
+                            resolve(user && !user.isAnonymous ? user : null);
+                        }
+                    });
+                });
+                return currentAuthUser;
+            } catch (e) {
+                currentAuthUser = auth.currentUser && !auth.currentUser.isAnonymous ? auth.currentUser : null;
+                return currentAuthUser;
+            }
         }
 
-        function loadCartData() {
+        async function autofillUserInfo() {
+            try {
+                if (!currentAuthUser) return;
+                const snap = await db.ref('users/' + currentAuthUser.uid).once('value');
+                const profile = snap.val() || {};
+                if (profile.name) document.getElementById('buyer_name').value = profile.name;
+                if (profile.phone) document.getElementById('buyer_phone').value = profile.phone;
+                if (profile.address) document.getElementById('shipping_address').value = profile.address;
+            } catch (e) { console.warn('회원정보 자동 입력 실패:', e); }
+        }
+
+        async function loadCartData() {
             try {
                 cartData = JSON.parse(localStorage.getItem('store_cart') || '[]');
-                const urlParams = new URLSearchParams(window.location.search);
-                const directProduct = urlParams.get('full_product');
-                const directPrice = Number(urlParams.get('price')) || 0;
 
-                if (directProduct && directPrice > 0 && cartData.length === 0) {
-                    cartData = [{ name: directProduct, price: directPrice, qty: 1 }];
+                // 상품 가격은 브라우저 localStorage 값을 그대로 신뢰하지 않고
+                // Firebase의 최신 products 가격을 다시 확인합니다.
+                if (db && cartData.length > 0) {
+                    try {
+                        const snap = await db.ref('products').once('value');
+                        const data = snap.val();
+                        const products = Array.isArray(data) ? data : (data ? Object.values(data) : []);
+                        const priceMap = new Map(products.map(p => [String(p.name || '').trim(), Number(p.price) || 0]));
+                        cartData = cartData.map(item => ({
+                            ...item,
+                            price: priceMap.has(String(item.name || '').trim()) ? priceMap.get(String(item.name || '').trim()) : null
+                        }));
+                        if (cartData.some(item => item.price === null || item.price <= 0)) {
+                            throw new Error('현재 판매하지 않는 상품이 장바구니에 포함되어 있습니다. 상품 목록에서 다시 선택해주세요.');
+                        }
+                    } catch (e) {
+                        console.error('상품 가격 검증 실패:', e);
+                        alert(e.message || '상품 정보를 확인하지 못했습니다.');
+                        cartData = [];
+                    }
                 }
 
                 const container = document.getElementById('cart_items_container');
@@ -194,7 +233,7 @@
             }
         }
 
-        function handleSubmit(event) {
+        async function handleSubmit(event) {
             event.preventDefault();
 
             if (cartData.length === 0) {
@@ -207,10 +246,33 @@
             const address = document.getElementById('shipping_address').value.trim();
             const depositor = document.getElementById('depositor_name').value.trim() || name;
             const memo = document.getElementById('memo').value.trim();
-            const password = document.getElementById('order_password').value.trim();
 
-            if (!name || !phone || !address || !password) {
+            if (!name || !phone || !address) {
                 alert('필수 입력 항목을 모두 입력해주세요.');
+                return;
+            }
+
+            const user = currentAuthUser;
+            const ownerUid = user && !user.isAnonymous ? user.uid : 'guest';
+
+            // 제출 직전에도 가격을 다시 확인하여 localStorage 조작을 방지합니다.
+            try {
+                const snap = await db.ref('products').once('value');
+                const data = snap.val();
+                const products = Array.isArray(data) ? data : (data ? Object.values(data) : []);
+                const priceMap = new Map(products.map(p => [String(p.name || '').trim(), Number(p.price) || 0]));
+                let subtotal = 0;
+                for (const item of cartData) {
+                    const realPrice = priceMap.get(String(item.name || '').trim());
+                    if (!realPrice || realPrice <= 0) throw new Error(`판매하지 않는 상품이 포함되어 있습니다: ${item.name}`);
+                    item.price = realPrice;
+                    subtotal += realPrice * (Number(item.qty) || 1);
+                }
+                productSubtotal = subtotal;
+                shippingFee = subtotal >= 50000 ? 0 : 3000;
+                finalTotalPrice = subtotal + shippingFee;
+            } catch (e) {
+                alert(e.message || '상품 가격 확인에 실패했습니다.');
                 return;
             }
 
@@ -224,33 +286,34 @@
                 address: address,
                 depositor: depositor,
                 memo: memo,
-                password: password,
                 product: fullProductText,
                 items: cartData,
                 price: finalTotalPrice,
                 date: new Date().toISOString().replace('T', ' ').substring(0, 16),
-                status: '입금대기'
+                status: '입금대기',
+                ownerUid: ownerUid
             };
 
-            // Firebase 또는 LocalStorage에 주문 저장
             try {
-                let existingOrders = JSON.parse(localStorage.getItem('store_orders') || '[]');
-                existingOrders.unshift(newOrder);
-                localStorage.setItem('store_orders', JSON.stringify(existingOrders));
+                if (!db) throw new Error('Firebase 연결이 없습니다.');
 
-                if (db) {
-                    db.ref('store_orders').push(newOrder);
-                }
-            } catch (e) {}
+                // 서버 규칙에서 회원은 자신의 UID, 비회원은 guest 신규 주문만 허용합니다.
+                const newRef = db.ref('store_orders').push();
+                await newRef.set(newOrder);
 
-            // 장바구니 비우기
-            localStorage.removeItem('store_cart');
+                // 브라우저에서도 최근 주문을 확인할 수 있도록 백업합니다.
+                localStorage.removeItem('store_cart');
+                sessionStorage.setItem('pending_order_complete', JSON.stringify({ orderId: newOrder.orderId, name: newOrder.name, product: newOrder.product, price: newOrder.price, depositor: newOrder.depositor }));
 
-            // 완료 팝업 표시 후 완료 페이지로 이동
-            document.getElementById('order_popup_modal').classList.remove('hidden');
-            setTimeout(() => {
-                location.href = `complete.html?order_id=${orderId}&name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}&password=${password}&full_product=${encodeURIComponent(fullProductText)}&price=${finalTotalPrice}&depositor=${encodeURIComponent(depositor)}&memo=${encodeURIComponent(memo)}`;
-            }, 1000);
+                document.getElementById('order_popup_modal').classList.remove('hidden');
+                setTimeout(() => {
+                    // 비밀번호를 URL에 넣지 않습니다.
+                    location.href = 'complete.html';
+                }, 1000);
+            } catch (e) {
+                console.error('주문 저장 오류:', e);
+                alert('주문 저장에 실패했습니다. 잠시 후 다시 시도해주세요.\n\n오류: ' + (e.message || e));
+            }
         }
     </script>
 </body>

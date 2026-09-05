@@ -1,307 +1,39 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>관리자 - 주문 관리 시스템 (Firebase)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-    <style>
-        body { background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    </style>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>관리자 - 오늘한끼냉동 주문 관리</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+<style>body{background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}</style>
 </head>
 <body class="text-slate-800 antialiased pb-16">
-    <header class="bg-slate-900 text-white py-4 px-4 shadow-md sticky top-0 z-50">
-        <div class="max-w-2xl mx-auto flex justify-between items-center">
-            <h1 class="text-base font-bold">📊 연상네트웍스 관리자 대시보드</h1>
-            <div class="flex items-center space-x-2">
-                <button onclick="enableTTS()" id="tts_btn" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 rounded-lg font-medium transition">
-                    🔊 음성알림 켜기
-                </button>
-                <a href="index.html" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg font-medium transition">스토어로 가기</a>
-            </div>
-        </div>
-    </header>
-
-    <main class="max-w-2xl mx-auto p-4 mt-2 space-y-4">
-        <div class="grid grid-cols-2 gap-3">
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                <span class="text-xs text-slate-500 font-medium">총 접수 주문</span>
-                <div id="total_orders_count" class="text-2xl font-bold text-slate-900 mt-1">0건</div>
-            </div>
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                <span class="text-xs text-slate-500 font-medium">입금 대기 / 확인 필요</span>
-                <div id="pending_orders_count" class="text-2xl font-bold text-indigo-600 mt-1">0건</div>
-            </div>
-        </div>
-
-        <div class="flex justify-between items-center mt-4">
-            <h2 class="font-bold text-slate-800 text-base">📋 실시간 주문 리스트 (Firebase 연동)</h2>
-            <div class="space-x-2">
-                <button onclick="addSampleOrder()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition">
-                    + 샘플 주문 추가 테스트
-                </button>
-                <button onclick="clearOrders()" class="bg-white hover:bg-red-50 text-red-600 border border-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition">
-                    전체 초기화
-                </button>
-            </div>
-        </div>
-
-        <div id="order_list_container" class="space-y-3"></div>
-        
-        <div id="empty_notice" class="bg-white rounded-xl p-8 text-center border border-slate-200 text-slate-400 text-sm hidden">
-            아직 접수된 주문이 없습니다. 쇼핑몰에서 장바구니 주문을 진행해 보세요!
-        </div>
-    </main>
-
-    <script>
-        function checkAdminAuth() {
-            if (sessionStorage.getItem('store_admin_authed') === 'true') return;
-            const password = prompt('🔐 연상네트웍스 주문 관리자 비밀번호를 입력하세요:');
-            if (password === 'kwakys010%') {
-                sessionStorage.setItem('store_admin_authed', 'true');
-            } else {
-                alert('비밀번호가 일치하지 않습니다.');
-                location.href = 'index.html';
-            }
-        }
-        checkAdminAuth();
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyApTZXjW03-8Z2AMh8uOksT7LzM-hwX39I",
-            authDomain: "oneul-hankki.firebaseapp.com",
-            databaseURL: "https://oneul-hankki-default-rtdb.firebaseio.com",
-            projectId: "oneul-hankki",
-            storageBucket: "oneul-hankki.firebasestorage.app",
-            messagingSenderId: "512249280108",
-            appId: "1:512249280108:web:8ba0d79e819c7ec43c0a49"
-        };
-
-        let db = null;
-        try {
-            if (typeof firebase !== 'undefined') {
-                if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-                db = firebase.database();
-            }
-        } catch (e) {}
-        
-        let currentOrders = [];
-        let previousOrderCount = null;
-        let isTtsEnabled = false;
-
-        function enableTTS() {
-            isTtsEnabled = true;
-            playTTS("주문 음성 알림이 활성화되었습니다.");
-            const btn = document.getElementById('tts_btn');
-            if (btn) {
-                btn.innerText = "🔊 알림 켜짐";
-                btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-500');
-                btn.classList.add('bg-emerald-600');
-            }
-        }
-
-        function playTTS(text) {
-            if (!('speechSynthesis' in window)) return;
-            try {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'ko-KR';
-                window.speechSynthesis.speak(utterance);
-            } catch (e) {}
-        }
-
-        function parseSafeDate(dateString) {
-            if (!dateString) return new Date(0);
-            const normalized = dateString.replace(/-/g, '/');
-            const parsed = new Date(normalized);
-            return isNaN(parsed.getTime()) ? new Date(0) : parsed;
-        }
-
-        function initRealtimeOrders() {
-            if (!db) {
-                currentOrders = getLocalFallbackOrders();
-                renderOrders(currentOrders);
-                return;
-            }
-
-            const ordersRef = db.ref('store_orders');
-            ordersRef.on('value', (snapshot) => {
-                const data = snapshot.val();
-                let fetchedOrders = [];
-
-                if (data) {
-                    if (Array.isArray(data)) {
-                        fetchedOrders = data.filter(item => item !== null);
-                    } else {
-                        fetchedOrders = Object.keys(data).map(key => ({
-                            firebaseKey: key,
-                            ...data[key]
-                        }));
-                    }
-                }
-
-                fetchedOrders.sort((a, b) => parseSafeDate(b.date) - parseSafeDate(a.date));
-
-                if (previousOrderCount !== null && fetchedOrders.length > previousOrderCount) {
-                    if (isTtsEnabled) playTTS("새로운 주문이 들어왔습니다.");
-                }
-                previousOrderCount = fetchedOrders.length;
-                currentOrders = fetchedOrders;
-
-                renderOrders(currentOrders);
-            }, (error) => {
-                currentOrders = getLocalFallbackOrders();
-                renderOrders(currentOrders);
-            });
-        }
-
-        function getLocalFallbackOrders() {
-            try {
-                let orders = JSON.parse(localStorage.getItem('store_orders') || '[]');
-                orders.sort((a, b) => parseSafeDate(b.date) - parseSafeDate(a.date));
-                return orders;
-            } catch (e) {
-                return [];
-            }
-        }
-
-        function renderOrders(orders) {
-            const container = document.getElementById('order_list_container');
-            const emptyNotice = document.getElementById('empty_notice');
-            if (!container || !emptyNotice) return;
-
-            document.getElementById('total_orders_count').innerText = orders.length + '건';
-            document.getElementById('pending_orders_count').innerText = orders.filter(o => o.status === '입금대기').length + '건';
-
-            if (orders.length === 0) {
-                container.innerHTML = '';
-                emptyNotice.classList.remove('hidden');
-                return;
-            }
-
-            emptyNotice.classList.add('hidden');
-            let html = '';
-
-            orders.forEach((order, index) => {
-                let statusStyle = 'bg-amber-50 text-amber-700 border-amber-200';
-                if (order.status === '입금완료') statusStyle = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-                else if (order.status === '배송준비') statusStyle = 'bg-blue-50 text-blue-700 border-blue-200';
-                else if (order.status === '배송중') statusStyle = 'bg-red-50 text-red-700 border-red-200';
-                else if (order.status === '배송완료') statusStyle = 'bg-slate-100 text-slate-700 border-slate-300';
-
-                // [수정] 상품 내역 안전 파싱 렌더링
-                let productHtml = '';
-                if (order.items && Array.isArray(order.items) && order.items.length > 0) {
-                    productHtml = order.items.map(i => `<div><span class="text-indigo-600 font-bold">[${i.category || '기본'}]</span> ${i.name} (${i.qty}개)</div>`).join('');
-                } else {
-                    productHtml = order.product ? order.product.replace(/\n/g, '<br>') : '상품 내역 없음';
-                }
-
-                html += `
-                    <div class="bg-white rounded-xl shadow-sm p-4 border border-slate-200 space-y-3">
-                        <div class="flex justify-between items-start border-b border-slate-100 pb-2">
-                            <div>
-                                <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">${order.orderId || 'ORD-UNKNOWN'}</span>
-                                <span class="text-xs text-slate-400 ml-2">${order.date || ''}</span>
-                            </div>
-                            <div>
-                                <select onchange="updateStatus(${index}, this.value)" class="text-xs font-bold p-1 rounded border ${statusStyle}">
-                                    <option value="입금대기" ${order.status === '입금대기' ? 'selected' : ''}>⏳ 입금대기</option>
-                                    <option value="입금완료" ${order.status === '입금완료' ? 'selected' : ''}>✅ 입금완료</option>
-                                    <option value="배송준비" ${order.status === '배송준비' ? 'selected' : ''}>📦 배송준비</option>
-                                    <option value="배송중" ${order.status === '배송중' ? 'selected' : ''}>🚚 배송중</option>
-                                    <option value="배송완료" ${order.status === '배송완료' ? 'selected' : ''}>📦 배송완료</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2 text-sm">
-                            <div class="col-span-2">
-                                <span class="text-xs text-slate-400 block mb-1">주문 상품 내역</span>
-                                <div class="font-bold text-slate-800 text-xs sm:text-sm space-y-1 bg-slate-50 p-2.5 rounded-lg border border-slate-100">${productHtml}</div>
-                            </div>
-                            <div class="col-span-2 flex justify-between items-center border-t border-slate-100 pt-2 mt-1">
-                                <span class="text-xs text-slate-400">총 결제 금액</span>
-                                <span class="font-bold text-emerald-600 text-base">${Number(order.price || 0).toLocaleString()}원</span>
-                            </div>
-                        </div>
-
-                        <div class="bg-slate-50 rounded-lg p-3 space-y-1 text-xs text-slate-600 border border-slate-100">
-                            <div><strong class="text-slate-700">주문자:</strong> ${order.name || ''} (${order.phone || ''})</div>
-                            <div><strong class="text-slate-700">입금자명:</strong> <span class="text-red-500 font-bold">${order.depositor || ''}</span></div>
-                            <div><strong class="text-slate-700">배송주소:</strong> ${order.address || ''}</div>
-                            ${order.memo ? `<div><strong class="text-slate-700">요청사항:</strong> ${order.memo}</div>` : ''}
-                        </div>
-
-                        <div class="flex justify-end space-x-2 pt-1">
-                            <button onclick="deleteOrder(${index})" class="text-xs text-slate-400 hover:text-red-600 px-2 py-1 transition">삭제하기</button>
-                        </div>
-                    </div>
-                `;
-            });
-
-            container.innerHTML = html;
-        }
-
-        function updateStatus(index, newStatus) {
-            const target = currentOrders[index];
-            if (!target) return;
-            target.status = newStatus;
-            if (db && target.firebaseKey) {
-                db.ref('store_orders/' + target.firebaseKey).update({ status: newStatus });
-            } else {
-                localStorage.setItem('store_orders', JSON.stringify(currentOrders));
-                renderOrders(currentOrders);
-            }
-        }
-
-        function deleteOrder(index) {
-            if (confirm('해당 주문 내역을 삭제하시겠습니까?')) {
-                const target = currentOrders[index];
-                if (!target) return;
-                if (db && target.firebaseKey) {
-                    db.ref('store_orders/' + target.firebaseKey).remove();
-                } else {
-                    currentOrders.splice(index, 1);
-                    localStorage.setItem('store_orders', JSON.stringify(currentOrders));
-                    renderOrders(currentOrders);
-                }
-            }
-        }
-
-        function clearOrders() {
-            if (confirm('모든 주문 내역을 초기화하시겠습니까?')) {
-                if (db) db.ref('store_orders').remove();
-                localStorage.removeItem('store_orders');
-                renderOrders([]);
-            }
-        }
-
-        function addSampleOrder() {
-            const newOrder = {
-                orderId: 'ORD' + Math.floor(100000 + Math.random() * 900000),
-                name: '테스트고객',
-                phone: '010-1234-5678',
-                address: '대전광역시 서구 둔산로 100',
-                product: '한돈 냉동 삼겹살 구이용 (500g) (1개)',
-                items: [{ name: '한돈 냉동 삼겹살 구이용 (500g)', price: 14000, qty: 1, category: '돼지' }],
-                price: 17500,
-                depositor: '테스트고객',
-                memo: '경비실에 맡겨주세요',
-                password: '1234',
-                date: new Date().toISOString().replace('T', ' ').substring(0, 16),
-                status: '입금대기'
-            };
-            if (db) db.ref('store_orders').push(newOrder);
-            else {
-                currentOrders.unshift(newOrder);
-                localStorage.setItem('store_orders', JSON.stringify(currentOrders));
-                renderOrders(currentOrders);
-            }
-        }
-
-        initRealtimeOrders();
-    </script>
-</body>
-</html>
+<header class="bg-slate-900 text-white py-4 px-4 shadow-md sticky top-0 z-50"><div class="max-w-2xl mx-auto flex justify-between items-center"><h1 class="text-base font-bold">📊 연상네트웍스 관리자 대시보드</h1><div class="flex gap-2"><button id="logout_btn" onclick="logoutAdmin()" class="text-xs bg-slate-700 px-3 py-1.5 rounded-lg">로그아웃</button><a href="index.html" class="text-xs bg-slate-800 px-3 py-1.5 rounded-lg">스토어</a></div></div></header>
+<main class="max-w-2xl mx-auto p-4 mt-2 space-y-4">
+<div id="login_box" class="bg-white rounded-2xl shadow-sm border p-5 space-y-3"><h2 class="font-bold">🔐 관리자 로그인</h2><p class="text-xs text-slate-500">Firebase Authentication에 등록된 관리자 계정으로 로그인하세요.</p><input id="admin_email" type="email" placeholder="관리자 이메일" class="w-full border rounded-xl p-3 text-sm"><input id="admin_password" type="password" placeholder="비밀번호" class="w-full border rounded-xl p-3 text-sm"><button onclick="loginAdmin()" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl">로그인</button><div id="login_msg" class="text-xs text-red-500"></div></div>
+<div id="dashboard" class="hidden space-y-4">
+<div class="grid grid-cols-2 gap-3"><div class="bg-white p-4 rounded-xl shadow-sm border"><span class="text-xs text-slate-500">총 접수 주문</span><div id="total_orders_count" class="text-2xl font-bold mt-1">0건</div></div><div class="bg-white p-4 rounded-xl shadow-sm border"><span class="text-xs text-slate-500">입금 대기</span><div id="pending_orders_count" class="text-2xl font-bold text-indigo-600 mt-1">0건</div></div></div>
+<div class="flex justify-between items-center"><h2 class="font-bold text-base">📋 실시간 주문 리스트</h2><div class="flex gap-2"><button onclick="enableTTS()" id="tts_btn" class="text-xs bg-indigo-600 text-white px-2.5 py-1.5 rounded-lg">🔊 음성알림</button><button onclick="clearOrders()" class="text-xs text-red-600 border px-3 py-1.5 rounded-lg">전체 초기화</button></div></div>
+<div id="order_list_container" class="space-y-3"></div><div id="empty_notice" class="bg-white rounded-xl p-8 text-center border text-slate-400 text-sm hidden">아직 접수된 주문이 없습니다.</div></div>
+</main>
+<script>
+const firebaseConfig={apiKey:"AIzaSyApTZXjW03-8Z2AMh8uOksT7LzM-hwX39I",authDomain:"oneul-hankki.firebaseapp.com",databaseURL:"https://oneul-hankki-default-rtdb.firebaseio.com",projectId:"oneul-hankki",storageBucket:"oneul-hankki.firebasestorage.app",messagingSenderId:"512249280108",appId:"1:512249280108:web:8ba0d79e819c7ec43c0a49"};
+firebase.initializeApp(firebaseConfig);const db=firebase.database(),auth=firebase.auth();let currentOrders=[],tts=false,previousCount=null;
+function isAdminUser(user){return !!(user&&user.email);} 
+async function loginAdmin(){const email=document.getElementById('admin_email').value.trim(),pw=document.getElementById('admin_password').value;if(!email||!pw){return showLoginMsg('이메일과 비밀번호를 입력하세요.')}try{const r=await auth.signInWithEmailAndPassword(email,pw);const snap=await db.ref('admins/'+r.user.uid).once('value');if(snap.val()!==true){await auth.signOut();return showLoginMsg('관리자 권한이 등록되지 않은 계정입니다.')}showDashboard();}catch(e){showLoginMsg('로그인 실패: '+e.message)}}
+function showLoginMsg(t){document.getElementById('login_msg').innerText=t}
+function showDashboard(){document.getElementById('login_box').classList.add('hidden');document.getElementById('dashboard').classList.remove('hidden');initRealtimeOrders()}
+function logoutAdmin(){auth.signOut().then(()=>location.reload())}
+auth.onAuthStateChanged(async user=>{if(!user)return;try{const s=await db.ref('admins/'+user.uid).once('value');if(s.val()===true)showDashboard();else await auth.signOut()}catch(e){await auth.signOut()}});
+function enableTTS(){tts=true;playTTS('주문 음성 알림이 활성화되었습니다.');document.getElementById('tts_btn').innerText='🔊 알림 켜짐'}
+function playTTS(t){if(!('speechSynthesis'in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ko-KR';speechSynthesis.speak(u)}
+function parseSafeDate(x){const d=new Date(String(x||'').replace(/-/g,'/'));return isNaN(d)?new Date(0):d}
+function initRealtimeOrders(){db.ref('store_orders').on('value',snap=>{const data=snap.val();currentOrders=data?Object.keys(data).map(k=>({firebaseKey:k,...data[k]})):[];currentOrders.sort((a,b)=>parseSafeDate(b.date)-parseSafeDate(a.date));if(previousCount!==null&&currentOrders.length>previousCount&&tts)playTTS('새로운 주문이 들어왔습니다.');previousCount=currentOrders.length;renderOrders()},err=>alert('주문 조회 권한 오류: '+err.message))}
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function renderOrders(){const c=document.getElementById('order_list_container'),empty=document.getElementById('empty_notice');document.getElementById('total_orders_count').innerText=currentOrders.length+'건';document.getElementById('pending_orders_count').innerText=currentOrders.filter(o=>o.status==='입금대기').length+'건';if(!currentOrders.length){c.innerHTML='';empty.classList.remove('hidden');return}empty.classList.add('hidden');c.innerHTML=currentOrders.map((o,i)=>{let product=o.items&&Array.isArray(o.items)?o.items.map(x=>`<div>[${esc(x.category||'상품')}] ${esc(x.name)} (${Number(x.qty||1)}개)</div>`).join(''):esc(o.product||'상품 내역 없음').replace(/\n/g,'<br>');return `<div class="bg-white rounded-xl shadow-sm p-4 border space-y-3"><div class="flex justify-between border-b pb-2"><div><span class="text-xs font-bold text-indigo-600">${esc(o.orderId||'ORD')}</span><span class="text-xs text-slate-400 ml-2">${esc(o.date||'')}</span></div><select onchange="updateStatus(${i},this.value)" class="text-xs font-bold border rounded p-1"><option ${o.status==='입금대기'?'selected':''}>입금대기</option><option ${o.status==='입금완료'?'selected':''}>입금완료</option><option ${o.status==='배송준비'?'selected':''}>배송준비</option><option ${o.status==='배송중'?'selected':''}>배송중</option><option ${o.status==='배송완료'?'selected':''}>배송완료</option></select></div><div class="bg-slate-50 rounded-lg p-3 text-xs space-y-1"><div class="font-bold">${product}</div><div>결제금액: <b class="text-emerald-600">${Number(o.price||0).toLocaleString()}원</b></div><div>주문자: ${esc(o.name)} (${esc(o.phone)})</div><div>입금자: <b class="text-red-500">${esc(o.depositor||o.name)}</b></div><div>주소: ${esc(o.address)}</div>${o.memo?`<div>메모: ${esc(o.memo)}</div>`:''}</div><div class="text-right"><button onclick="deleteOrder(${i})" class="text-xs text-red-500">삭제</button></div></div>`}).join('')}
+async function updateStatus(i,status){const o=currentOrders[i];if(!o?.firebaseKey)return;try{await db.ref('store_orders/'+o.firebaseKey).update({status})}catch(e){alert('상태 변경 실패: '+e.message)}}
+async function deleteOrder(i){if(!confirm('해당 주문을 삭제하시겠습니까?'))return;const o=currentOrders[i];if(!o?.firebaseKey)return;try{await db.ref('store_orders/'+o.firebaseKey).remove()}catch(e){alert('삭제 실패: '+e.message)}}
+async function clearOrders(){if(!confirm('모든 주문 내역을 초기화하시겠습니까?'))return;try{await db.ref('store_orders').remove()}catch(e){alert('초기화 실패: '+e.message)}}
+</script></body></html>
