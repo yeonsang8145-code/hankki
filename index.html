@@ -1046,18 +1046,44 @@
             const phone = document.getElementById('signup_phone').value.trim();
             const email = document.getElementById('signup_email').value.trim();
             if (!userId || !name || !addressBase || !phone || !email) { alert('필수 회원정보를 모두 입력해주세요.'); return; }
-            const pwRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,12}$/;
-            if (!pwRegex.test(password)) { alert('비밀번호는 8~12자리의 영문, 숫자, 특수문자를 모두 포함해야 합니다.'); return; }
+            // Firebase Authentication에서 사용할 비밀번호 형식:
+            // 8~12자리, 영문 1개 이상 + 숫자 1개 이상 + 영문/숫자가 아닌 특수문자 1개 이상
+            // 특정 특수문자(@$!%*#?&)만 허용하면 사용자가 입력한 다른 정상적인 특수문자가 거부될 수 있으므로
+            // 모든 일반 특수문자를 허용합니다. (공백은 제외)
+            const pwRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9\s])[A-Za-z0-9!@#$%^&*()_+\-=\[\]{};':\\|,.<>/?`~\"\\]{8,12}$/;
+            if (!pwRegex.test(password)) {
+                alert('비밀번호는 8~12자리이며 영문, 숫자, 특수문자를 각각 1개 이상 포함해야 합니다. 공백은 사용할 수 없습니다.');
+                return;
+            }
             try {
                 const cred = await auth.createUserWithEmailAndPassword(email, password);
                 const profile = { userId, name, address: `${addressBase} ${addressDetail}`.trim(), phone, email, createdAt: firebase.database.ServerValue.TIMESTAMP };
-                await db.ref('users/' + cred.user.uid).set(profile);
+                try {
+                    await db.ref('users/' + cred.user.uid).set(profile);
+                } catch (profileError) {
+                    // Auth 계정 생성 후 회원정보 저장이 실패하면 방치된 계정이 남지 않도록 즉시 롤백합니다.
+                    try { await cred.user.delete(); } catch (_) {}
+                    throw profileError;
+                }
                 try { await cred.user.sendEmailVerification(); } catch (_) {}
                 currentProfile = profile;
                 closeSignupModal();
                 alert('회원가입이 완료되었습니다. 가입한 이메일로 로그인할 수 있습니다.');
             } catch (e) {
-                const msg = e && e.code === 'auth/email-already-in-use' ? '이미 가입된 이메일입니다. 비밀번호 재설정을 이용해주세요.' : (e.message || '회원가입에 실패했습니다.');
+                let msg = '회원가입에 실패했습니다.';
+                if (e && e.code === 'auth/email-already-in-use') {
+                    msg = '이미 가입된 이메일입니다. 비밀번호 재설정을 이용해주세요.';
+                } else if (e && e.code === 'auth/invalid-email') {
+                    msg = '이메일 주소 형식이 올바르지 않습니다.';
+                } else if (e && e.code === 'auth/weak-password') {
+                    msg = '비밀번호가 Firebase 정책에 맞지 않습니다. 8~12자리 영문+숫자+특수문자로 입력해주세요.';
+                } else if (e && e.code === 'auth/operation-not-allowed') {
+                    msg = 'Firebase에서 이메일/비밀번호 로그인이 활성화되어 있지 않습니다. Firebase Console의 Authentication 설정을 확인해주세요.';
+                } else if (e && e.code === 'PERMISSION_DENIED') {
+                    msg = '회원가입은 되었지만 회원정보 저장 권한이 없습니다. Firebase Realtime Database Rules를 확인해주세요.';
+                } else if (e && e.message) {
+                    msg = e.message;
+                }
                 alert(msg);
             }
         }

@@ -197,11 +197,16 @@
                         const snap = await db.ref('products').once('value');
                         const data = snap.val();
                         const products = Array.isArray(data) ? data : (data ? Object.values(data) : []);
-                        const priceMap = new Map(products.map(p => [String(p.name || '').trim(), Number(p.price) || 0]));
-                        cartData = cartData.map(item => ({
-                            ...item,
-                            price: priceMap.has(String(item.name || '').trim()) ? priceMap.get(String(item.name || '').trim()) : null
-                        }));
+                        const productMap = new Map(products.map(p => [String(p.name || '').trim(), p]));
+                        cartData = cartData.map(item => {
+                            const p = productMap.get(String(item.name || '').trim());
+                            return {
+                                ...item,
+                                price: p ? (Number(p.price) || 0) : null,
+                                storageType: p ? (p.storageType || '🧊냉동') : (item.storageType || '🧊냉동'),
+                                category: p ? (p.category || '') : (item.category || '')
+                            };
+                        });
                         if (cartData.some(item => item.price === null || item.price <= 0)) {
                             throw new Error('현재 판매하지 않는 상품이 장바구니에 포함되어 있습니다. 상품 목록에서 다시 선택해주세요.');
                         }
@@ -287,12 +292,15 @@
                 const snap = await db.ref('products').once('value');
                 const data = snap.val();
                 const products = Array.isArray(data) ? data : (data ? Object.values(data) : []);
-                const priceMap = new Map(products.map(p => [String(p.name || '').trim(), Number(p.price) || 0]));
+                const productMap = new Map(products.map(p => [String(p.name || '').trim(), p]));
                 let subtotal = 0;
                 for (const item of cartData) {
-                    const realPrice = priceMap.get(String(item.name || '').trim());
+                    const product = productMap.get(String(item.name || '').trim());
+                    const realPrice = product ? Number(product.price) : 0;
                     if (!realPrice || realPrice <= 0) throw new Error(`판매하지 않는 상품이 포함되어 있습니다: ${item.name}`);
                     item.price = realPrice;
+                    item.storageType = product.storageType || item.storageType || '🧊냉동';
+                    item.category = product.category || item.category || '';
                     subtotal += realPrice * (Number(item.qty) || 1);
                 }
                 productSubtotal = subtotal;

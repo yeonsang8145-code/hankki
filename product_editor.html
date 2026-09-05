@@ -1,15 +1,33 @@
 <!DOCTYPE html>
 <html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>오늘한끼냉동 - 상품 관리</title><script src="https://cdn.tailwindcss.com"></script><script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script></head>
-<body class="bg-slate-50 text-slate-800 pb-20"><header class="bg-slate-900 text-white py-4 px-6 sticky top-0 z-50"><div class="max-w-4xl mx-auto flex justify-between"><h1 class="font-bold">🥩 오늘한끼냉동 - 상품 편집</h1><div class="flex gap-2"><button onclick="logoutAdmin()" class="text-xs bg-slate-700 px-3 py-2 rounded">로그아웃</button><a href="index.html" class="text-xs bg-slate-800 px-3 py-2 rounded">스토어</a></div></div></header>
+<body class="bg-slate-50 text-slate-800 pb-20"><header class="bg-slate-900 text-white py-4 px-6 sticky top-0 z-50"><div class="max-w-4xl mx-auto flex justify-between"><h1 class="font-bold">🥩 오늘한끼냉동 - 상품 편집</h1><div class="flex gap-2"><a href="admin_firebase.html" class="text-xs bg-indigo-700 px-3 py-2 rounded">주문관리</a><button onclick="logoutAdmin()" class="text-xs bg-slate-700 px-3 py-2 rounded">로그아웃</button><a href="index.html" class="text-xs bg-slate-800 px-3 py-2 rounded">스토어</a></div></div></header>
 <main class="max-w-4xl mx-auto p-4 space-y-5"><div id="login_box" class="bg-white p-5 rounded-2xl border space-y-3"><h2 class="font-bold">🔐 관리자 로그인</h2><input id="admin_email" type="email" placeholder="관리자 이메일" class="w-full border rounded-xl p-3 text-sm"><input id="admin_password" type="password" placeholder="비밀번호" class="w-full border rounded-xl p-3 text-sm"><button onclick="loginAdmin()" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl">로그인</button><div id="login_msg" class="text-xs text-red-500"></div></div>
 <div id="editor" class="hidden space-y-5"><div class="bg-white rounded-2xl border p-5 space-y-4"><h2 id="form_title" class="font-bold">➕ 새 상품 추가</h2><input type="hidden" id="edit_index" value="-1"><div class="grid md:grid-cols-2 gap-3"><input id="p_name" placeholder="상품명" class="border rounded-xl p-3 text-sm"><input id="p_price" type="number" placeholder="판매가격" class="border rounded-xl p-3 text-sm"><select id="p_main_category" class="border rounded-xl p-3 text-sm"><option>🧊냉동❄️냉장</option><option>🍳간편요리</option><option>🦑건어물</option><option>🍿스낵</option></select><input id="p_category" placeholder="세부 카테고리" class="border rounded-xl p-3 text-sm"><input id="p_img" value="🥟" placeholder="대표 이모지" class="border rounded-xl p-3 text-sm"><select id="p_badge" class="border rounded-xl p-3 text-sm"><option>인기상품 🔥</option><option>한정특가 ⚡</option><option>신상품 ✨</option><option>상시판매 📦</option><option>냉동상품 🧊</option><option>냉장상품 ❄️</option></select><select id="p_storage_type" class="border rounded-xl p-3 text-sm"><option>🧊냉동</option><option>❄️냉장</option><option>🍃실온</option><option>🌡️상온</option></select><input id="p_desc" placeholder="상품 상세 설명" class="border rounded-xl p-3 text-sm md:col-span-2"></div><div><label class="text-xs font-semibold">상품 사진 최대 5장</label><input id="photo_input" type="file" accept="image/*" multiple class="block mt-2 text-sm"><div id="photo_preview" class="flex flex-wrap gap-2 mt-2"></div></div><div><label class="text-xs font-semibold">추가 정보 사진 3장</label><div class="grid grid-cols-3 gap-2 mt-2"><input class="extra_input" type="file" accept="image/*"><input class="extra_input" type="file" accept="image/*"><input class="extra_input" type="file" accept="image/*"></div><div id="extra_preview" class="grid grid-cols-3 gap-2 mt-2"></div></div><div class="flex gap-2"><button onclick="saveProduct()" class="flex-1 bg-emerald-600 text-white font-bold py-3 rounded-xl">💾 Firebase 저장</button><button onclick="resetForm()" class="bg-slate-200 px-5 rounded-xl">취소</button></div></div><div class="bg-white rounded-2xl border p-5"><div class="flex justify-between items-center mb-4"><h2 class="font-bold">📦 등록 상품 <span id="count">0</span>개</h2><div class="flex gap-2"><button onclick="newProduct()" class="text-xs bg-indigo-600 text-white px-3 py-2 rounded">+ 새 상품</button><button onclick="exportJson()" class="text-xs bg-emerald-50 text-emerald-700 px-3 py-2 rounded">백업</button></div></div><div id="list" class="space-y-2"></div></div></div></main>
 <script>
-const firebaseConfig={apiKey:"AIzaSyApTZXjw03-8Z2AMh8uOksT7LzM-hwX39I",authDomain:"oneul-hankki.firebaseapp.com",databaseURL:"https://oneul-hankki-default-rtdb.firebaseio.com",projectId:"oneul-hankki",storageBucket:"oneul-hankki.firebasestorage.app",messagingSenderId:"512249280108",appId:"1:512249280108:web:8ba0d79e819c7ec43c0a49"};
+const firebaseConfig={apiKey:"AIzaSyApTZXjW03-8Z2AMh8uOksT7LzM-hwX39I",authDomain:"oneul-hankki.firebaseapp.com",databaseURL:"https://oneul-hankki-default-rtdb.firebaseio.com",projectId:"oneul-hankki",storageBucket:"oneul-hankki.firebasestorage.app",messagingSenderId:"512249280108",appId:"1:512249280108:web:8ba0d79e819c7ec43c0a49"};
 // API key 오타 방지를 위해 실제 값으로 교체
-firebaseConfig.apiKey="AIzaSyApTZXjw03-8Z2AMh8uOksT7LzM-hwX39I";firebase.initializeApp(firebaseConfig);const db=firebase.database(),auth=firebase.auth();let products=[],photos=[],extras=['','',''];
+firebaseConfig.apiKey="AIzaSyApTZXjW03-8Z2AMh8uOksT7LzM-hwX39I";firebase.initializeApp(firebaseConfig);const db=firebase.database(),auth=firebase.auth();let products=[],photos=[],extras=['','',''];
 function msg(t){document.getElementById('login_msg').innerText=t}
 async function loginAdmin(){const e=document.getElementById('admin_email').value.trim(),p=document.getElementById('admin_password').value;if(!e||!p)return msg('이메일과 비밀번호를 입력하세요.');try{const r=await auth.signInWithEmailAndPassword(e,p);const s=await db.ref('admins/'+r.user.uid).once('value');if(s.val()!==true){await auth.signOut();return msg('관리자 권한이 등록되지 않은 계정입니다.')}showEditor()}catch(x){msg('로그인 실패: '+x.message)}}
-async function authReady(){const u=auth.currentUser;if(!u)return;const s=await db.ref('admins/'+u.uid).once('value');if(s.val()===true)showEditor();else auth.signOut()}auth.onAuthStateChanged(()=>authReady().catch(()=>{}));
+async function verifyAdmin(user){
+  if(!user){
+    document.getElementById('login_box').classList.remove('hidden');
+    document.getElementById('editor').classList.add('hidden');
+    return;
+  }
+  if(user.isAnonymous){
+    await auth.signOut();
+    return msg('관리자 계정으로 로그인해주세요.');
+  }
+  try{
+    const s=await db.ref('admins/'+user.uid).once('value');
+    if(s.val()===true){ showEditor(); }
+    else { await auth.signOut(); msg('이 계정에는 관리자 권한이 없습니다. Firebase의 admins/'+user.uid+' = true를 확인하세요.'); }
+  }catch(e){
+    msg('관리자 권한 확인 실패: '+(e.message||e));
+  }
+}
+auth.onAuthStateChanged(user=>verifyAdmin(user));
 function showEditor(){document.getElementById('login_box').classList.add('hidden');document.getElementById('editor').classList.remove('hidden');loadProducts()}function logoutAdmin(){auth.signOut().then(()=>location.reload())}
 async function loadProducts(){try{const s=await db.ref('products').once('value');const d=s.val();products=Array.isArray(d)?d:(d?Object.keys(d).map(k=>({id:k,...d[k]})):[]);products=products.map(normalize);render()}catch(e){alert('상품 조회 실패: '+e.message)}}
 function normalize(p){return {...p,photos:Array.isArray(p.photos)?p.photos:(p.photo?[p.photo]:[]),extraImages:Array.isArray(p.extraImages)?[...p.extraImages,'',''].slice(0,3):['','',''],price:Number(p.price)||0}}
